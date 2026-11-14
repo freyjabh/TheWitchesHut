@@ -1,0 +1,1405 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script src="room-layout-defaults.js"></script>
+  <script src="overlay-guard.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Witch's Hut — Two Player Mockup</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background:#151411; color:#eee9dc; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; padding:14px; }
+    main { width:min(1500px,100%); margin:0 auto; }
+    h1 { font-size:1.2rem; margin:0 0 6px; }
+    .title-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .title-row .intro { margin:0; }
+    .intro { color:#aaa392; font-size:.82rem; margin:0 0 12px; }
+    .players { display:grid; grid-template-columns:1fr; gap:12px; align-items:start; width:min(1200px,100%); margin:0 auto; }
+    .player-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,25%);gap:12px;align-items:start}
+    .player-game{min-width:0}.notes-panel{min-width:0}
+    .notes-toggle{display:block;width:100%;margin-bottom:6px;font-size:.75rem;text-align:left}
+    .notes-body{width:100%;aspect-ratio:313/398}
+    .notes-body[hidden]{display:none}
+    .notes-body .notepad-sheet{width:100%;height:100%;max-height:none;max-width:none}
+    .notes-body .notepad-sheet textarea{font:13px/1.5 Georgia,serif}
+    .notes-body .note-arrow{font-size:20px}.notes-body .note-page-number{font-size:11px}
+    .player-layout:has(.notes-panel.is-collapsed){grid-template-columns:minmax(0,1fr) auto}
+    @media(max-width:600px){.player-layout,.player-layout:has(.notes-panel.is-collapsed){grid-template-columns:minmax(0,1fr)}.notes-body{max-width:313px;margin:0 auto}.notes-body .notepad-sheet textarea{font-size:15px}}
+    .player { min-width:0; padding:10px; border:1px solid #625d4d; border-radius:9px; background:#201f1a; }
+    .player h2 { margin:0 0 8px; font-size:.88rem; letter-spacing:.1em; text-transform:uppercase; color:#d8cba9; }
+    .scene { position:relative; aspect-ratio:16/9; overflow:hidden; border:2px solid #8e815f; border-radius:7px; background:#363931; isolation:isolate; }
+    .scene::before { content:""; position:absolute; inset:0 0 27%; background:linear-gradient(180deg,#55584e,#44463e); z-index:-1; }
+    .scene::after { content:""; position:absolute; inset:73% 0 0; background:repeating-linear-gradient(90deg,#302f29 0 110px,#39372f 111px 114px); border-top:4px solid #82775a; z-index:-1; }
+    .ceiling { position:absolute; inset:0 0 auto; height:10%; background:#292a25; border-bottom:3px solid #68634f; }
+    .beam { position:absolute; top:10%; height:5px; width:100%; background:#75684d; opacity:.8; }.beam.b2{top:20%;opacity:.45}
+    .label { position:absolute; z-index:2; top:10px; left:10px; padding:4px 7px; border-radius:4px; background:#181813c9; color:#e0dac9; font-size:.65rem; letter-spacing:.1em; text-transform:uppercase; }
+    button { font:inherit; color:#f0ead9; background:#39372f; border:1px solid #82775a; border-radius:5px; padding:6px 9px; cursor:pointer; }
+    button:hover:not(:disabled){background:#504a3b} button:focus-visible{outline:2px solid #e3ca8c;outline-offset:2px} button:disabled{opacity:.45;cursor:default}
+    .nav { display:flex; justify-content:space-between; align-items:center; gap:5px; margin-top:7px; }
+    .wall-count { color:#c9c1ae; font-size:.78rem; }
+    .status { min-height:1.35em; margin:6px 0 0; color:#cfc7af; font-size:.78rem; }
+    .player-cover { position:absolute; z-index:50; inset:0; display:grid; place-items:center; padding:14px; overflow:hidden; max-height:calc(100dvh - 24px); background:#080807dc; }
+    .player-cover[hidden] { display:none; }
+    .notepad-overlay { position:absolute; z-index:6; inset:0; display:grid; place-items:center; padding:10px; background:#080807dc; }
+    .notepad-overlay[hidden] { display:none; }
+    .inventory { border-top:1px solid #625d4d; margin-top:6px; padding-top:6px; }
+    .inventory-head { display:flex; align-items:center; gap:7px; margin-bottom:5px; }
+    .inventory-head h3 { margin:0; color:#d4cbb6; font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; }
+    .small-note,.inventory-empty { color:#8f8878; font-size:.65rem; }
+    .permanent-item { display:flex; align-items:center; gap:7px; margin-bottom:5px; }
+    .permanent-label { color:#968d79; font-size:.61rem; text-transform:uppercase; letter-spacing:.08em; }
+    .permanent-slot,.slot { border:1px solid #665c49; background:#211f1a; border-radius:4px; }
+    .permanent-slot { width:30px; height:30px; padding:2px; display:grid; place-items:center; }
+    .inventory-grid { display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:4px; }
+    .slot { height:34px; position:relative; color:#aea48f; font-size:.58rem; padding:2px; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
+    .slot-number { position:absolute; top:1px; left:3px; color:#746d5e; }
+    .mini-book { width:19px;height:23px;background:linear-gradient(135deg,#674633,#37251d);border:2px solid #a18551;border-radius:3px; }
+    .mini-notepad { width:19px;height:23px;position:relative;border:2px solid #91825d;border-radius:2px;background:#d9ccaa;box-shadow:inset 3px 0 #77684a; }
+    .mini-notepad::after { content:"";position:absolute;left:5px;right:2px;top:6px;height:1px;background:#95866a;box-shadow:0 4px #95866a,0 8px #95866a; }
+    .slot.lantern-slot { align-items:center;cursor:pointer;border-color:#c8a35a; }
+    .lantern-icon { display:block;width:15px;height:22px;position:relative;border:2px solid #d2b66b;border-radius:6px 6px 5px 5px;background:radial-gradient(ellipse,#fff2ad 0 17%,#e7a447 48%,#986232 100%);box-shadow:0 0 9px #ffc85c; }
+    .lantern-icon::before { content:"";position:absolute;left:3px;right:3px;top:-5px;height:4px;border:1px solid #c5a85d;border-radius:3px 3px 0 0;background:#52422a; }
+    .lantern-art{display:block;position:relative;width:100%;height:100%;pointer-events:none}
+    .lantern-art img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 3px #ffe28c)}
+    .lantern-art::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 72%,#fff7c5 0 7%,#ffdb6faa 25%,#e4b94e33 48%,transparent 75%);mask-image:var(--bottle-image);mask-size:contain;mask-position:center;mask-repeat:no-repeat;mix-blend-mode:screen;pointer-events:none}
+    .filled-bottle-image{filter:drop-shadow(0 0 7px #ffe28c)}
+    .slot.selected { outline:2px solid #f1d38a;outline-offset:1px; }
+    .test-tools { display:flex;flex-wrap:wrap;gap:4px;margin-top:6px; }
+    .test-tools button { padding:4px 6px;font-size:.62rem; }
+    .scene.dark-room { background:#030303;border-color:#27231c; }
+    .scene.dark-room::before,.scene.dark-room::after,.scene.dark-room .ceiling,.scene.dark-room .beam,.scene.dark-room .label { display:none; }
+    .dark-room-label { position:absolute;z-index:1;inset:12% 10% auto;text-align:center;color:#4d463a;font:clamp(.8rem,2vw,1.2rem) Georgia,serif; }
+    .dark-placeholder { position:absolute;z-index:3;width:36px;height:36px;display:grid;place-items:center;border:2px dashed #8c7852;border-radius:50%;color:#e7d9b7;background:#423b2d;font-size:.72rem;opacity:0;pointer-events:none; }
+    .dark-placeholder.revealed { opacity:1;pointer-events:auto; }
+    .darkness { position:absolute;z-index:4;inset:0;pointer-events:none;background:radial-gradient(circle at var(--light-x,50%) var(--light-y,50%),transparent 0 72px,rgba(0,0,0,1) 125px); }
+    .dark-room-found { position:absolute;z-index:2;inset:30% 12% auto;text-align:center;color:#665a43;font-size:.75rem; }
+    .notepad-page { width:min(640px,92vw);min-height:min(58vh,540px);padding:28px clamp(18px,4vw,42px);border:7px ridge #8d744b;border-radius:8px;background:repeating-linear-gradient(#e2d5b6 0 31px,#baad8f 32px 33px);box-shadow:0 18px 55px #0009;color:#383126; }
+    .notepad-page h3 { margin:0 0 12px;font:600 1.1rem Georgia,serif;color:#493b2a; }
+    .notepad-page textarea { display:block;width:100%;height:min(46vh,410px);resize:vertical;border:0;outline:0;background:transparent;color:#302b24;font:1rem/2 Georgia,serif; }
+    .notepad-pages { display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;color:#d0c5ac;font-size:.85rem; }
+    .table-notepad { position:absolute;z-index:2;left:46%;bottom:31%;width:8%;height:5%;padding:0;border:3px solid #b5a77e;border-radius:2px;background:linear-gradient(135deg,#e2d6b9,#9c8e6c);box-shadow:0 2px 2px #211b14;transform:rotate(-5deg); }
+    .table-notepad::after { content:"";position:absolute;left:15%;right:10%;top:35%;height:2px;background:#7e7258;box-shadow:0 5px #7e7258; }
+    .permanent-slot .mini-book{width:19px;height:23px}
+    .placeholder-wall{position:absolute;inset:35% 10% auto;text-align:center;color:#c3bdac;font-size:.9rem}
+
+    /* Scanned Testspel 2 artwork used as replaceable room mockups */
+    .scene:not(.dark-room){background:#272821 url("Grafik/0_bakgrund1.JPG") center/100% 100% no-repeat}
+    .scene:not(.dark-room)::before,.scene:not(.dark-room)::after{display:none}
+    .scene:not(.dark-room) .ceiling,.scene:not(.dark-room) .beam{display:none}
+    .asset{position:absolute;display:block;object-fit:fill;pointer-events:none}
+    .desk{left:15%;right:auto;bottom:12%;width:70%;height:43%;background:none}
+    .desk-top,.desk-front,.desk-leg,.desk-drawer{display:none}
+    .book-button{left:39%;top:19%;width:22%;height:17%;}
+    .spellbook{transform:none}
+    .book-cover{inset:0;border:0;border-radius:0;background:url("Testspel%202/2a_bok.png") center/100% 100% no-repeat;box-shadow:none}
+    .book-cover::before,.book-cover::after{display:none}
+    .penholder{left:20%;top:5%;width:7%;height:21%;border:0;border-radius:0;background:linear-gradient(90deg,#544b39,#9b8150,#4c4334)}
+    .skull{right:18%;top:9%;width:9%;height:19%}
+    .center-table{left:34%;bottom:14%;width:32%;height:36%;border:0;border-radius:0;background:url("Testspel%202/1_bord.png") center/100% 100% no-repeat;box-shadow:none}
+    .center-table::before,.center-table::after{display:none}
+    .table-notepad{left:40%;bottom:auto;top:5%;width:21%;height:16%;border:0;border-radius:0;background:url("Testspel%202/0_anteckningsblock.png") center/100% 100% no-repeat;box-shadow:none;transform:rotate(-5deg)}
+    .table-notepad::after{display:none}
+    .pot-shelf{left:7%;top:28%;width:31%;height:43%;border:0;background:url("Testspel%202/1_hylla.png") center/100% 100% no-repeat;box-shadow:none}
+    .pot-shelf::before,.pot-shelf::after{display:none}
+    .firepit{right:9%;bottom:25%;width:23%;height:15%}
+    .fire{right:16%;bottom:35%;width:10%;height:21%}
+    .kettle{right:10%;bottom:40%;width:25%;height:17%;border:0;border-radius:0;background:url("Testspel%202/2b_kastrull.png") center/100% 100% no-repeat;box-shadow:none}
+    .kettle::before,.kettle::after,.kettle-handle{display:none}
+    .center-table{left:34%;bottom:12%;width:32%;height:43%;border:0;border-radius:0;background:url("Grafik/0_bord.PNG") center/contain no-repeat;box-shadow:none}
+    .center-table::before,.center-table::after{display:none}
+    .player-cover:has(> .spellbook-back-image){display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .spellbook-back-image{display:block;width:90%;height:100%;min-width:0;min-height:0;object-fit:contain}
+    .player-cover:has(> .spellbook-open-image){display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .spellbook-open-image{display:block;width:94%;height:100%;min-width:0;min-height:0;object-fit:contain}
+    .player-cover:has(>.recipe-book){display:flex;align-items:center;justify-content:center;overflow:hidden;container-type:size}
+    .recipe-book{position:relative;width:min(96cqw,calc(94cqh * 379 / 313));height:auto;aspect-ratio:379/313;container-type:size}
+    .recipe-book>img{width:100%;height:100%;object-fit:contain}
+    .private-recipe,.recipe-instructions{position:absolute;top:15%;height:72%;overflow:hidden;color:#38291b;font:clamp(8px,3.2cqh,16px)/1.3 Georgia,serif}
+    .private-recipe{left:12%;width:34%}.recipe-instructions{left:56%;width:30%}
+    .private-recipe h3{font-size:1.15em;margin:0 0 .4em}.private-recipe p,.recipe-instructions p{margin:0 0 .5em}
+    .private-recipe ol{padding-left:1.3em;margin:0}.private-recipe li{margin-bottom:.35em}.private-recipe small{display:block;font-size:.8em;opacity:.8}
+    .kettle{cursor:pointer}.kettle.brew-ready{filter:drop-shadow(0 0 9px #e7da7299) drop-shadow(2px 5px 3px #301d1066)}
+    .brew-glow{position:absolute;left:22%;top:47%;width:56%;height:13%;background:radial-gradient(ellipse,#fff8ba99,#cce87b55,transparent 70%);pointer-events:none}
+    .brew-failed{animation:kettle-shake .12s 7;filter:drop-shadow(0 0 10px #d94b32)!important}
+    .brew-spill{position:absolute;inset:10% 12% 35%;pointer-events:none;overflow:visible}
+    .brew-spill::before{content:'';position:absolute;inset:0 8% 20%;border-radius:50%;background:radial-gradient(ellipse,#e6bd7199,#93865366 45%,transparent 72%);animation:brew-smoke 1.5s ease-out both}
+    .brew-spill::after{content:'×';position:absolute;left:36%;top:-20%;width:28%;aspect-ratio:1;display:grid;place-items:center;border:2px solid #ecd6a3;border-radius:50%;background:#532d25;color:#ffe0af;font:bold clamp(12px,2.5vw,28px)/1 Georgia,serif;box-shadow:0 2px 5px #21150baa;animation:brew-smoke 1.5s ease-out both}
+    .brew-spill i{position:absolute;left:calc(8% + var(--i)*10%);top:45%;width:12%;aspect-ratio:1;border-radius:45% 55% 48% 52%;border:1px solid #ddc68e;background:radial-gradient(circle at 35% 25%,#e5d49b,#837954aa 55%,#534d3c66);animation:brew-bubbles 1.3s ease-out both;animation-delay:calc(var(--i)*.025s)}
+    @keyframes brew-smoke{0%{opacity:0;transform:translateY(8px) scale(.8)}20%,60%{opacity:1}100%{opacity:0;transform:translateY(-24px) scale(1.15)}}
+    @keyframes kettle-shake{0%,100%{translate:-2px 0}50%{translate:2px 0}}
+    @keyframes brew-bubbles{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:.9}70%{opacity:.5}100%{opacity:0;transform:translateY(-45px) scale(1.9)}}
+    @media(prefers-reduced-motion:reduce){.brew-failed{animation:none}.brew-spill i{animation:none}.brew-spill::before,.brew-spill::after{animation:none}}
+    .book-spread{position:relative;background:url("Testspel%202/2a_bok.oppen.png") center/100% 100% no-repeat;border:0;min-height:min(48vh,350px);padding:4% 6%}
+    .page,.page+.page{background:transparent;border-left:0}
+    .page+.page{border-left:1px solid #9d8c6c}
+
+    /* North wall props */
+    .desk{position:absolute;z-index:1;left:10%;right:10%;bottom:26%;height:24%}.desk-top{position:absolute;left:0;right:0;top:28%;height:17%;background:linear-gradient(#765b3e,#513d2c);border:3px solid #3b3025;border-radius:5px;box-shadow:0 7px #32271f}.desk-front{position:absolute;top:43%;bottom:0;left:7%;right:7%;background:repeating-linear-gradient(90deg,#59432e 0 70px,#654c33 71px 75px);border:3px solid #3b3025}.desk-leg{position:absolute;top:53%;bottom:0;width:6%;background:#493626;border:2px solid #30271e}.desk-leg.left{left:11%}.desk-leg.right{right:11%}.desk-drawer{position:absolute;top:49%;left:34%;width:32%;height:25%;border:2px solid #35291f;background:#725539}.desk-drawer::after{content:"";position:absolute;left:46%;top:40%;width:8%;height:16%;background:#c1a36a;border-radius:50%}.book-button{position:absolute;z-index:2;left:39%;top:0;width:23%;height:45%;border:0;padding:0;background:transparent}.book-button:hover:not(:disabled){background:transparent;filter:brightness(1.2)}.spellbook{position:absolute;inset:0;transform:perspective(120px) rotateX(6deg)}.book-cover{position:absolute;inset:0;border:4px solid #32251e;border-radius:7px 10px 5px 5px;background:linear-gradient(135deg,#54392d,#36251f);box-shadow:inset 0 0 0 3px #8a6941,2px 5px 8px #17130e}.book-cover::before{content:"✦";position:absolute;inset:16% 22%;display:grid;place-items:center;border:2px solid #b0945d;color:#d0b674;font-size:clamp(10px,1.7vw,24px)}.book-cover::after{content:"SPELLBOOK";position:absolute;left:0;right:0;bottom:8%;text-align:center;color:#ddc58a;font:clamp(6px,.8vw,12px) Georgia,serif;letter-spacing:.12em}.penholder{position:absolute;z-index:2;left:17%;top:5%;width:8%;height:33%;background:linear-gradient(90deg,#544b39,#9b8150,#4c4334);border:2px solid #342f26;border-radius:3px 3px 7px 7px}.penholder::before{content:"";position:absolute;left:8%;right:8%;top:-48%;height:53%;background:repeating-linear-gradient(90deg,transparent 0 7px,#d6c18c 8px 10px,transparent 11px 15px)}.skull{position:absolute;z-index:2;right:17%;top:7%;width:12%;height:28%;border-radius:48% 48% 40% 40%;background:#c5b99a;border:2px solid #655d4d;box-shadow:inset 0 -8px #9c9076}.skull::before{content:"";position:absolute;top:40%;left:15%;width:22%;height:20%;border-radius:50%;background:#28251f;box-shadow:19px 0 #28251f}.skull::after{content:"";position:absolute;left:39%;bottom:2%;width:22%;height:24%;background:#8d836c;clip-path:polygon(50% 0,100% 100%,0 100%)}.small-object{position:absolute;z-index:2;right:35%;top:19%;width:5%;height:14%;border-radius:50% 50% 3px 3px;background:#66725a;border:2px solid #353c30}
+    /* East wall props */
+    .small-door{position:absolute;left:38%;bottom:27%;width:22%;height:43%;border:5px solid #6d5b3f;border-radius:55px 55px 0 0;background:repeating-linear-gradient(90deg,#493a2b 0 19px,#594631 20px 23px);box-shadow:inset 0 0 0 3px #302920}.small-door::after{content:"";position:absolute;right:12%;top:56%;width:8px;height:8px;border-radius:50%;background:#d1b36e}.lock-plate{position:absolute;right:4%;top:52%;width:18px;height:25px;border:2px solid #ae925d;border-radius:4px;background:#51452f}.lock-plate::after{content:"";position:absolute;left:5px;top:6px;width:4px;height:8px;border:1px solid #d7c188;border-radius:50% 50% 2px 2px}.family-painting{position:absolute;left:12%;top:28%;width:23%;height:31%;padding:7px;border:7px ridge #806844;background:#30281e;box-shadow:0 5px 12px #15130f80}.painting-art{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(#989071 0 58%,#655943 59%)}.person{position:absolute;bottom:8%;width:27%;height:53%;border-radius:45% 45% 8% 8%;background:#635147}.person::before{content:"";position:absolute;top:-24%;left:25%;width:50%;aspect-ratio:1;border-radius:50%;background:#c0a27e;box-shadow:inset 0 5px #5b473b}.person.mother{left:7%;height:67%;width:34%;background:#514956}.person.child-one{left:43%;height:43%;width:22%;background:#8a674a}.person.child-two{left:66%;height:40%;width:21%;background:#626c56}.person.child-three{left:83%;height:35%;width:16%;background:#786b5b}.chest{position:absolute;left:66%;bottom:27%;width:23%;height:20%;border:4px solid #34291e;border-radius:5px 5px 9px 9px;background:repeating-linear-gradient(90deg,#654a30 0 22px,#765637 23px 26px);box-shadow:inset 0 7px #927043}.chest::before{content:"";position:absolute;left:-3px;right:-3px;top:-28%;height:34%;border:4px solid #34291e;border-radius:14px 14px 2px 2px;background:#755535}.chest::after{content:"";position:absolute;left:46%;top:37%;width:9px;height:12px;border:2px solid #c1a36a;border-radius:5px 5px 2px 2px}
+    /* South wall props */
+    .pot-shelf{position:absolute;left:8%;top:31%;width:27%;height:38%;border:5px solid #483725;background:linear-gradient(90deg,#59432e,#654c33);box-shadow:inset 0 0 0 2px #82633e}.pot-shelf::before,.pot-shelf::after{content:"";position:absolute;left:0;right:0;height:5px;background:#8b7048;box-shadow:0 3px #30271f}.pot-shelf::before{top:33%}.pot-shelf::after{top:66%}.jar{position:absolute;top:26%;width:4%;height:9%;border:2px solid #39362c;border-radius:5px 5px 7px 7px;background:linear-gradient(90deg,#677153,#879067 45%,#566047);z-index:1}.jar::before{content:"";position:absolute;left:12%;right:12%;top:-17%;height:18%;background:#65543a;border:1px solid #342e24}.jar::after{content:"";position:absolute;left:18%;right:18%;bottom:15%;height:4px;background:#c8b78388}.jar.j1{left:11%;top:28%}.jar.j2{left:18%;top:30%;height:8%;background:#8b614b}.jar.j3{left:26%;top:27%;width:4%}.jar.j4{left:12%;top:41%;background:#8f7950}.jar.j5{left:21%;top:43%;width:5%;height:10%;background:#596a65}.jar.j6{left:28%;top:40%;height:8%;background:#89704d}.hanging-herbs{position:absolute;top:19%;left:9%;width:29%;height:15%;display:flex;justify-content:space-around}.herb-bundle{position:relative;width:12%;height:100%;border-top:3px solid #9a8255}.herb-bundle::before{content:"";position:absolute;top:0;left:50%;height:100%;border-left:2px solid #9a8255}.herb-bundle::after{content:"";position:absolute;left:10%;right:10%;top:18%;height:74%;background:repeating-linear-gradient(115deg,transparent 0 6px,#77815a 7px 10px,transparent 11px 15px);clip-path:polygon(48% 0,56% 0,100% 25%,68% 31%,90% 56%,60% 52%,76% 100%,47% 78%,20% 100%,34% 58%,0 68%,33% 38%,7% 31%)}.firepit{position:absolute;right:9%;bottom:25%;width:23%;height:15%;border-radius:50%;background:radial-gradient(ellipse,#df7841 0 17%,#7c3b2b 42%,#413128 67%);border:6px solid #51493b;box-shadow:0 0 22px #e66f2b40}.fire{position:absolute;right:16%;bottom:35%;width:10%;height:21%;background:linear-gradient(0deg,#d5522e,#f3c66a);clip-path:polygon(50% 100%,5% 72%,22% 42%,31% 0,60% 38%,76% 19%,92% 71%);filter:drop-shadow(0 0 9px #ec7d32)}.kettle{position:absolute;right:12%;bottom:42%;width:17%;height:23%;border:4px solid #292923;border-radius:44% 44% 48% 48%;background:linear-gradient(90deg,#39433d,#707366 48%,#353a33);box-shadow:inset 0 -9px #272d28}.kettle::before{content:"";position:absolute;left:12%;right:12%;top:-13%;height:13%;border-radius:50%;background:#4d5045;border:2px solid #262720}.kettle::after{content:"";position:absolute;left:28%;top:-45%;width:44%;height:42%;border:4px solid #292923;border-bottom:0;border-radius:50% 50% 0 0}.kettle-handle{position:absolute;z-index:1;right:17%;bottom:39%;width:23%;height:31%;border:3px solid #282923;border-bottom:0;border-radius:50% 50% 0 0}.center-table{position:absolute;left:39%;bottom:27%;width:23%;height:7%;border:3px solid #382b20;border-radius:4px;background:linear-gradient(#8b6b46,#634a32);box-shadow:0 7px #31271f}.center-table::before,.center-table::after{content:"";position:absolute;top:80%;width:8%;height:170%;background:#473525;border:2px solid #30251c}.center-table::before{left:12%}.center-table::after{right:12%}
+    /* West wall props */
+    .outside-door{position:absolute;left:13%;bottom:26%;width:27%;height:48%;border:7px solid #59472f;border-radius:80px 80px 0 0;background:linear-gradient(90deg,#392d24,#59432d 45%,#342820);box-shadow:inset 0 0 0 3px #30251d,4px 5px 8px #18150f;cursor:pointer}.outside-door::before{content:"";position:absolute;left:13%;right:13%;top:17%;bottom:8%;border:3px solid #8a704b;border-radius:55px 55px 2px 2px;background:repeating-linear-gradient(90deg,transparent 0 25px,#8a704b 26px 29px)}.outside-door::after{content:"";position:absolute;right:10%;top:57%;width:9px;height:9px;border-radius:50%;background:#d2b36e;box-shadow:0 0 0 3px #453624}.locked-mark{position:absolute;z-index:2;right:7%;top:53%;width:21px;height:29px;border:2px solid #b19862;border-radius:4px;background:#393126}.locked-mark::before{content:"";position:absolute;left:5px;top:-10px;width:7px;height:10px;border:2px solid #c4a86d;border-bottom:0;border-radius:7px 7px 0 0}.forest-window{position:absolute;right:12%;top:27%;width:34%;height:32%;border:9px solid #654f34;border-radius:48% 48% 4px 4px;background:linear-gradient(#747e70 0 48%,#555d46 49%);box-shadow:0 0 0 3px #33291e,0 0 24px #b6b17a30;overflow:hidden}.forest-window::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 0 42%,#473a2b 43% 49%,transparent 50%),linear-gradient(0deg,transparent 0 50%,#473a2b 51% 56%,transparent 57%);z-index:3}.tree{position:absolute;bottom:0;width:27%;height:100%;background:linear-gradient(90deg,#423c2b,#554a34 60%,#352f23);clip-path:polygon(42% 0,100% 33%,76% 34%,100% 59%,67% 58%,92% 86%,0 86%,32% 57%,6% 59%,30% 34%,12% 36%)}.tree.t1{left:-3%;transform:scale(1.14)}.tree.t2{left:36%;bottom:-5%;transform:scale(.95)}.tree.t3{right:-7%;transform:scale(1.24)}.forest-ground{position:absolute;left:0;right:0;bottom:0;height:28%;background:linear-gradient(#596448,#3b4537)}
+    .overlay{position:fixed;z-index:10;inset:0;padding:16px;display:grid;place-items:center;background:#080807dc}.overlay[hidden]{display:none}.book-dialog{width:min(720px,96vw);border:2px solid #9b8357;border-radius:10px;background:#242019;box-shadow:0 24px 80px #000b;padding:16px}.book-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.book-head h2{margin:0;font:600 1.1rem Georgia,serif;color:#e6d4a5}.book-spread{min-height:min(45vh,320px);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;border:5px solid #493729;border-radius:5px;background:#d6c8a6;color:#3d3328}.page{padding:20px clamp(12px,3vw,34px);font:1rem/1.65 Georgia,serif;background:linear-gradient(90deg,#d8c9a6,#e6dabb)}.page+.page{border-left:2px solid #b1a17f;background:linear-gradient(90deg,#e2d5b5,#d8c9a6)}.page-number{display:block;text-align:center;margin-top:18px;font-size:.8rem;color:#76654c}.book-controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px}#spread-count{color:#d0c5ac;font-size:.85rem}.cover-view{min-height:min(45vh,320px);position:relative;display:grid;place-items:center;overflow:hidden;border:5px solid #493729;border-radius:5px;background:radial-gradient(ellipse,#5b4b36,#29241e 70%);color:#eee0be}.cover-inner{width:min(330px,80%);min-height:230px;padding:22px;border:7px ridge #9c7d48;border-radius:12px;background:linear-gradient(135deg,#53392b,#30221e);box-shadow:0 15px 35px #0008,inset 0 0 0 3px #32251e;text-align:center}.cover-inner h3{margin:0 0 12px;font:1rem Georgia,serif;letter-spacing:.16em;color:#dbc38a}.symbols{display:flex;justify-content:space-around;gap:8px;margin:12px 0;color:#e0c773;font-size:1.7rem}.symbol-lock{display:flex;justify-content:center;gap:6px;margin:10px 0}.symbol-lock input{width:42px;height:48px;text-align:center;font:1.3rem Georgia,serif;color:#f2e8d2;background:#211d18;border:2px solid #aa8b54;border-radius:5px}.lock-feedback{min-height:1.2em;color:#e1bc79;font-size:.85rem}.back-inner{width:min(450px,86%);padding:22px;border:5px ridge #8d744b;background:#e0d2ae;color:#3d3328;box-shadow:0 10px 30px #0008;font:1rem/1.7 Georgia,serif}.back-inner h3{margin:0 0 12px;text-align:center;font:1.1rem Georgia,serif}.key-list{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}.key-list span{padding:5px 7px;border-bottom:1px solid #9c8a68}.hidden{display:none!important}.blocked-message{position:fixed;z-index:20;left:50%;bottom:18px;transform:translateX(-50%);max-width:min(440px,90vw);padding:10px 14px;border:1px solid #9a8257;border-radius:7px;background:#201d17f2;color:#eadbb3;text-align:center;box-shadow:0 8px 25px #0008}.blocked-message[hidden]{display:none}
+    /* Main-project artwork. Keep these overrides after the placeholder styles. */
+    .desk{left:16%;right:auto;bottom:7%;width:68%;height:65%;background:url("Grafik/0_skrivbord-ren-kant.png") center/contain no-repeat}
+    .desk-top,.desk-front,.desk-leg,.desk-drawer{display:none}
+    .desk .book-button{left:39%;top:11%;width:22%;height:18%}
+    .desk .penholder{left:20%;top:5%;width:7%;height:19%}
+    .desk .skull{right:18%;top:8%;width:9%;height:16%}
+    .desk .small-object{top:19%;height:6%}
+    .hut-small-window{position:absolute;left:40%;top:5%;width:20%;height:30%;background:url("Grafik/0_litetfonster.PNG") center/contain no-repeat}
+    .pot-shelf{left:6%;top:19%;width:25%;height:70%;border:0;background:url("Grafik/0_hylla-ren-kant.png") center/contain no-repeat;box-shadow:none}
+    .pot-shelf::before,.pot-shelf::after{display:none}
+    .wall-shelf{position:absolute;left:37%;top:11%;width:27%;height:25%;background:url("Grafik/0_vagghylla.PNG") center/contain no-repeat}
+    .small-wall-shelf{position:absolute;left:42%;top:55%;width:18%;height:14%;background:url("Grafik/0_vagghylla.liten.PNG") center/contain no-repeat;filter:drop-shadow(2px 4px 3px rgb(48 29 16 / 58%))}
+    .north-wall-shelf{width:25%;height:22%;left:9%;top:9%}
+    .north-wall-shelf.shelf-2{left:65%}
+    .north-wall-shelf.shelf-3{top:33%}
+    .north-wall-shelf.shelf-4{left:65%;top:33%}
+    .north-wall-shelf.shelf-5{left:65%;top:57%}
+    /* Soft warm shadows follow the artwork's opaque edges. */
+    .desk,.pot-shelf,.center-table,.chest,.firepit,.kettle{filter:drop-shadow(3px 6px 4px rgb(48 29 16 / 60%)) drop-shadow(0 11px 8px rgb(39 24 14 / 40%))}
+    .wall-shelf,.small-door,.outside-door,.hut-small-window,.forest-window,.noticeboard,.family-painting,.hanging-herbs{filter:drop-shadow(2px 4px 3px rgb(48 29 16 / 58%))}
+    .noticeboard{position:absolute;left:9%;top:20%;width:27%;height:32%;background:url("Grafik/1_anslagstavla.png") center/contain no-repeat;cursor:pointer}
+    .south-extra-shelf{left:67%;top:9%;width:25%;height:23%}
+    .east-wall-shelf{left:66%;top:9%;width:25%;height:22%}.east-wall-shelf.east-shelf-2{top:31%}
+    .small-door{border:0;border-radius:0;background:transparent url("Grafik/0_dorr.PNG") center/contain no-repeat;box-shadow:none}
+    .small-door::after,.small-door .lock-plate{display:none}
+    .small-door .east-door-lock{display:block;position:absolute;left:66%;top:46%;width:17%;height:14%;border:0;padding:0;background:transparent;cursor:pointer}
+    .small-door .east-door-lock:hover:not(:disabled){background:transparent}
+    .small-door .east-door-entry,.small-door .east-door-entry:hover:not(:disabled){position:absolute;left:44%;top:18%;width:45%;height:68%;padding:0;border:0;background:transparent;cursor:pointer;border-radius:50% 50% 0 0}
+    .scene.back-room,.scene.back-room.dark-room{background:#030303 url("Grafik/0_bakgrund2.jpg") center/100% 100% no-repeat}
+    .player[data-player="1"] .scene.back-room{background-image:url("Grafik/0_bakgrund2.handavtryck.png")}
+    .back-room .dark-placeholder{left:68%;top:57%}
+    .dark-wall-code{position:absolute;left:27%;top:32%;margin:0;color:#e6dfcb;font:italic clamp(24px,6vw,76px) Georgia,serif;letter-spacing:.3em;rotate:-4deg;text-shadow:1px 1px 2px #302a20;user-select:none}
+    .dark-wall-hatch{position:absolute;left:36%;top:22%;width:46%;aspect-ratio:1456/1088;container-type:inline-size}
+    .dark-wall-hatch>img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}
+    .dark-hatch-digit,.dark-hatch-digit:hover:not(:disabled){position:absolute;top:46.5%;width:3.8%;height:8%;padding:0;border:0;border-radius:0;background:transparent;color:#17150f;font:clamp(8px,1.5vw,22px)/1 Georgia,serif;cursor:pointer}
+    .dark-hatch-digit-face{position:absolute;inset:10% 0;display:grid;place-items:center;background:linear-gradient(100deg,#dbcfad,#e8dbb9 48%,#ded2af);color:#17150f;font:3.6cqw/1 Georgia,serif;pointer-events:none}
+    .small-door.is-open{background-image:url("Grafik/0_dorr.oppen.png"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 1448'%3E%3Cpath fill='black' d='M455 1230V460Q470 230 712 145Q992 225 997 500V1250Z'/%3E%3C/svg%3E")}
+    .hanging-herbs{left:37%;top:32%;width:26%;height:13%}
+    .jar.j1{left:13%;top:30%;height:7%}.jar.j2{left:21%;top:30%;height:7%}
+    .jar.j3{left:13%;top:41%;height:7%}.jar.j4{left:21%;top:41%;height:7%}
+    .jar.j5{left:13%;top:52%;height:7%;width:4%}.jar.j6{left:21%;top:52%;height:7%}
+    .outside-door{left:15%;bottom:11%;width:25%;height:72%;padding:0;border:0;border-radius:0;background:transparent url("Grafik/0_dorr.PNG") center/contain no-repeat;box-shadow:none}
+    .outside-door:hover:not(:disabled){background:transparent url("Grafik/0_dorr.PNG") center/contain no-repeat;filter:drop-shadow(2px 4px 3px rgb(48 29 16 / 58%)) brightness(1.12)}
+    .outside-door::before,.outside-door::after,.outside-door .locked-mark{display:none}
+    .forest-window{right:16%;top:17%;width:23%;height:57%;border:0;border-radius:0;background:url("Grafik/0_stortfonster.PNG") center/contain no-repeat;box-shadow:none}
+    .forest-window::before,.forest-window .tree,.forest-window .forest-ground{display:none}
+    .chest{left:66%;bottom:20%;width:25%;height:28%;border:0;border-radius:0;background:url("Grafik/1_kista.PNG") center/contain no-repeat;box-shadow:none}
+    .chest::before,.chest::after{display:none}
+    .room-furnishing{position:absolute;object-fit:contain;pointer-events:none;filter:drop-shadow(3px 6px 4px rgb(48 29 16 / 60%)) drop-shadow(0 11px 8px rgb(39 24 14 / 40%))}
+    .room-box{position:absolute;width:18%;height:21%;object-fit:contain;filter:drop-shadow(3px 6px 4px rgb(48 29 16 / 60%))}
+    .north-box{left:78%;bottom:8%}
+    .east-box{left:42%;bottom:4%}
+    .south-box{left:8%;bottom:4%}
+    .west-box{left:73%;bottom:16%}
+    .firepit{border:0;border-radius:0;background:url("Grafik/1_eldfat.PNG") center/contain no-repeat;box-shadow:none}
+    .firepit.has-wood{background-image:url("Grafik/1_eldfat.ved.png")}
+    .firepit.is-burning{background-image:url("Grafik/1_eldfat.ved.brinner.png")}
+    .fire-tool{position:absolute;z-index:4;object-fit:contain;cursor:pointer;filter:drop-shadow(0 3px 2px rgb(48 29 16 / 64%))}
+    .herb-cabinet.is-open .fire-tool{pointer-events:auto}
+    .firepit-flame{position:absolute;left:10%;bottom:22%;width:80%;height:170%;background:url("Grafik/1_flamma.png") center/contain no-repeat;pointer-events:none;filter:drop-shadow(0 0 8px #e9a44988)}
+    .fire{background:url("Grafik/1_flamma.png") center/contain no-repeat;clip-path:none}
+    .kettle{border:0;border-radius:0;background:url("Grafik/0_kittel.PNG") center/contain no-repeat;box-shadow:none}
+    .kettle::before,.kettle::after,.kettle-handle{display:none}
+    .trinket{position:absolute;z-index:3;object-fit:contain;filter:drop-shadow(0 3px 2px rgb(48 29 16 / 64%)) drop-shadow(1px 5px 4px rgb(39 24 14 / 42%))}
+    .wall-painting{position:absolute;top:7%;width:11%;height:22%;object-fit:contain;cursor:pointer;filter:drop-shadow(2px 4px 3px rgb(48 29 16 / 58%))}
+    .kettle-hanger{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden;filter:drop-shadow(1px 2px 1px rgb(30 23 16 / 42%))}
+    [data-action="pickup-key"],.chest,.firepit{cursor:pointer}
+    .chest.is-open{background-image:url("Grafik/1_kista.oppen.PNG")}
+    .chest-top-sheet{position:relative;width:auto;height:90%;max-width:90%;max-height:80dvh;aspect-ratio:826/550}
+    .chest-top-sheet>img{width:100%;height:100%;object-fit:fill}
+    .chest-top-wood{position:absolute;left:24%;top:44%;width:52%;height:39%;padding:0;border:0;background:transparent url("Grafik/1_ved.PNG") center/contain no-repeat;filter:drop-shadow(0 4px 3px #1c130c99)}
+    .chest-top-wood:hover:not(:disabled){background:transparent url("Grafik/1_ved.PNG") center/contain no-repeat;filter:brightness(1.15) drop-shadow(0 4px 3px #1c130c99)}
+    .chest-top-eye{position:absolute;left:42%;top:55%;width:18%;height:17%;padding:0;border:0;background:transparent url("Grafik/1_oga.png") center/contain no-repeat;filter:drop-shadow(0 3px 2px #21170e99)}
+    .chest-top-eye:hover:not(:disabled){background:transparent url("Grafik/1_oga.png") center/contain no-repeat;filter:brightness(1.15)}
+    .table-eye{position:absolute;left:62%;top:12%;width:18%;height:12%;object-fit:contain;cursor:pointer;filter:drop-shadow(0 2px 1px #30201088)}
+    .deer-painting-sheet{position:relative;height:94%;max-height:80dvh;aspect-ratio:562/768;max-width:90%}
+    .deer-hatch-sheet{position:relative;width:90%;height:90%;max-height:80dvh}
+    .item-image-overlay .deer-painting-sheet>img,.item-image-overlay .deer-hatch-sheet>img{display:block;width:100%;height:100%;object-fit:contain;cursor:pointer}
+    .deer-eye-socket{position:absolute;left:35%;top:40%;width:15%;height:12%;padding:0;border:0;background:transparent}
+    .deer-eye-socket:hover:not(:disabled),.deer-hatch-door:hover:not(:disabled){background:transparent;filter:brightness(1.15)}
+    .item-image-overlay .deer-eye-socket img{width:100%;height:100%;object-fit:contain}
+    .deer-hatch-door{position:absolute;inset:0 50% 0 0;border:0;background:transparent;padding:0}
+    .raven-painting-sheet{position:relative;height:94%;width:auto;max-width:94%;aspect-ratio:3/2}
+    .room-furnishing[data-action="inspect-raven"]{z-index:3;pointer-events:auto}
+    .room-furnishing[data-action="inspect-cat"]{z-index:3;pointer-events:auto;cursor:pointer}
+    .item-image-overlay .raven-painting-sheet>img{width:100%;height:100%;object-fit:contain}
+    .raven-beak-key{position:absolute;left:60.5%;top:25%;width:6%;height:20%;padding:0;border:0;background:transparent;filter:drop-shadow(0 2px 2px #19120d99)}
+    .raven-beak-key:hover:not(:disabled){background:transparent;filter:brightness(1.2) drop-shadow(0 2px 2px #19120d99)}
+    .item-image-overlay .raven-beak-key>img{width:100%;height:100%;object-fit:contain}
+    .noticeboard-sheet{position:relative;height:94%;width:auto;max-width:94%;aspect-ratio:567/421;container-type:inline-size}
+    .item-image-overlay .noticeboard-sheet>img{width:100%;height:100%;object-fit:fill}
+    .noticeboard-notes{position:absolute;inset:20% 13% 16% 15%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));gap:5% 7%;perspective:900px}
+    .noticeboard-notes.letter-notes{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:16% 7%;padding:6% 0}
+    .board-note,.board-note:hover:not(:disabled){position:relative;min-width:0;border:0;border-radius:1px;padding:0;background:transparent;color:#392c20;font:2.65cqw/1.2 Georgia,serif;rotate:var(--note-angle);perspective:700px}
+    .board-note-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .35s ease}
+    .board-note.is-flipped .board-note-inner{transform:rotateY(180deg)}
+    .board-note-face{position:absolute;inset:-9% -5%;display:grid;place-items:center;background:transparent url("Grafik/anslagstavla-lapp-akvarell.png") center/100% 100% no-repeat;filter:drop-shadow(1px 3px 2px #25160f70);backface-visibility:hidden;padding:8% 9%}
+    .board-note-face::before{content:'';position:absolute;top:1px;left:48%;width:5px;height:5px;border-radius:50%;background:#635247;box-shadow:1px 1px 1px #36271c}
+    .board-note-back{transform:rotateY(180deg);font-size:3.4cqw;letter-spacing:.14em}
+    .letter-note{cursor:default}.letter-note .board-note-face{font-size:4cqw}
+    .south-box-sheet{position:relative;height:94%;width:auto;max-width:94%;aspect-ratio:1448/1086}
+    .item-image-overlay .south-box-sheet>img{width:100%;height:100%;object-fit:fill}
+    .south-box-lock{position:absolute;left:33%;top:40%;width:23%;height:auto;aspect-ratio:1774/887;container-type:inline-size}
+    .item-image-overlay .south-box-lock>img{width:100%;height:auto;object-fit:contain;filter:drop-shadow(1px 3px 2px #21140cb0)}
+    .south-box-digit,.south-box-digit:hover:not(:disabled){position:absolute;top:55%;width:12%;height:29%;padding:0;border:0;border-radius:0;background:transparent;color:#17130f;font:700 11.5cqw/1 Georgia,serif;display:grid;place-items:center}
+    .south-box-digit-face{position:absolute;inset:10% 12%;display:grid;place-items:center;background:linear-gradient(100deg,#c4a25b,#e2c77e 48%,#c9ab65);font:11cqw/1 Georgia,serif;pointer-events:none}
+    .south-box-note,.south-box-note:hover:not(:disabled){position:absolute;left:38%;top:54%;width:32%;height:18%;padding:0;border:0;background:transparent;rotate:-6deg}
+    .item-image-overlay .south-box-note>img{width:100%;height:100%;object-fit:contain}
+    .fox-puzzle{height:96%;max-width:94%;display:flex;flex-direction:column;align-items:center;gap:5px}
+    .fox-picture{position:relative;height:82%;aspect-ratio:1117/1408;flex-shrink:1;min-height:0}
+    .item-image-overlay .fox-picture>img{width:100%;height:100%;object-fit:fill}
+    .fox-number,.fox-number:hover:not(:disabled){position:absolute;width:10%;height:9%;padding:0;border:0;background:transparent;border-radius:40%;cursor:pointer}
+    .fox-number:focus-visible{outline:1px solid #f9dfaa}
+    .fox-code-output{min-width:110px;padding:4px 12px;border:1px solid #9e8356;border-radius:3px;background:#dfcca3;color:#31251b;font:20px/1.1 Georgia,serif;letter-spacing:.15em;text-align:center}
+    .fox-code-feedback{min-height:1.2em;margin:0;color:#e5d2ac;font-size:12px}
+    .fox-hand,.fox-hand:hover:not(:disabled){position:absolute;left:24%;top:10%;width:54%;height:45%;padding:0;border:0;background:transparent;touch-action:none;user-select:none;cursor:pointer}
+    .fox-hand svg{width:100%;height:100%;fill:#ded4bd;opacity:.88;pointer-events:none}
+    .fox-hand.is-held{filter:drop-shadow(0 0 12px #fff1bf);scale:.97}
+    .held-box-sheet{position:relative;height:94%;max-width:94%;aspect-ratio:4/3}
+    .item-image-overlay .held-box-sheet>img{width:100%;height:100%;object-fit:contain}
+    @media(prefers-reduced-motion:reduce){.board-note-inner{transition:none}}
+    .firepit-wood{position:absolute;left:10%;top:10%;width:80%;height:80%;background:url("Grafik/1_ved.PNG") center/contain no-repeat;pointer-events:none}
+    .shelf-stock{position:absolute;pointer-events:none;overflow:visible}
+    .wall-shelf:has([data-layout-id="burk-1"]){z-index:3}
+    .shelf-stock [data-layout-id="burk-1"]{z-index:4}
+    .herb-cabinet{position:absolute;z-index:3;left:39%;top:27%;width:27%;height:43%;background:url("Grafik/1_ortskap.PNG") center/contain no-repeat;filter:drop-shadow(2px 4px 3px rgb(48 29 16 / 58%))}
+    .shelf-stock img.cabinet-herb{object-position:center top}
+    .herb-cabinet.is-open{background:none}
+    .cabinet-open-art{position:absolute;left:-34.4%;top:-18%;width:170.7%;height:131.3%;background:url("Grafik/1_skap.oppet.PNG") center/100% 100% no-repeat;pointer-events:none}
+    .shelf-stock img.cabinet-herb{z-index:2}
+    .herb-cabinet.is-open .cabinet-herb{pointer-events:auto;cursor:pointer}
+    .herb-cabinet.is-open .cabinet-herb:hover{filter:brightness(1.15) drop-shadow(0 2px 1px rgb(48 29 16 / 64%)) drop-shadow(1px 4px 3px rgb(39 24 14 / 42%))}
+    .inventory-herb img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+    .ladle-cursor-zone,.ladle-cursor-zone *{cursor:none!important}
+    #ladle-cursor{position:fixed;left:0;top:0;width:54px;height:95px;z-index:500;pointer-events:none;transform:translate(-16px,-16px);filter:drop-shadow(1px 3px 2px #15100a99)}
+    #ladle-cursor[hidden]{display:none}
+    #ladle-cursor img{width:100%;height:100%;object-fit:contain}
+    #ladle-cursor.charged::after{content:'';position:absolute;left:28%;bottom:10%;width:45%;height:27%;border-radius:50%;background:radial-gradient(ellipse,#fff9ce 0 12%,#f9d45b99 40%,transparent 72%);box-shadow:0 0 14px #ffdb7c99}
+    .shelf-stock img,.trinket,.fire-tool{pointer-events:auto;cursor:pointer}
+    .inspection-sheet{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;width:90%;height:94%;max-height:80dvh;color:#f0e0be;text-align:center}
+    .item-image-overlay .inspection-sheet>img{flex:1;min-height:0;width:100%;height:0;object-fit:contain}
+    .inspection-lantern{flex:1;min-height:0;width:100%;height:0}
+    .item-image-overlay .inspection-lantern>img{width:100%;height:100%;object-fit:contain}
+    .inspection-sheet figcaption{flex:none;width:min(420px,100%);font:clamp(10px,1.7vw,15px)/1.35 Georgia,serif}
+    .inspection-sheet strong{display:block;font-size:1.12em;margin-bottom:3px}
+    .inspection-sheet p{margin:0}.inspection-sheet button{font-size:.78rem;padding:4px 12px}
+    .cabinet-doors{position:absolute;inset:0;z-index:5;background:url("Grafik/1_skapdorrar.PNG") center/100% 100% no-repeat;pointer-events:none}
+    .cabinet-lock{position:absolute;left:46%;top:43%;width:13%;height:21%;z-index:6;padding:0;border:0;border-radius:0;background:transparent url("Grafik/1_kodlas.png") center/contain no-repeat;pointer-events:auto;filter:drop-shadow(0 3px 2px #30201099)}
+    .cabinet-lock:hover:not(:disabled){background:transparent url("Grafik/1_kodlas.png") center/contain no-repeat;filter:drop-shadow(0 3px 2px #30201099) brightness(1.12)}
+    .item-image-overlay:not([hidden]){display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:65}
+    .item-image-overlay img{display:block;width:90%;height:100%;object-fit:contain}
+    .cabinet-lock-sheet{position:relative;height:94%;max-height:80dvh;aspect-ratio:465/536;max-width:94%;flex-shrink:0}
+    .item-image-overlay .cabinet-lock-sheet img{width:100%;height:100%}
+    .cabinet-lock-sheet{container-type:size}
+    .lock-digit{position:absolute;top:65%;width:12%;height:20%;padding:0;border:0;border-radius:0;background:transparent;color:#000;font:700 clamp(14px,12cqh,48px)/1 "Palatino Linotype","Book Antiqua",Georgia,serif;text-shadow:0 1px 2px rgb(0 0 0 / 45%);display:grid;place-items:center}
+    .lock-digit:hover:not(:disabled){background:transparent;color:#000}
+    .shelf-stock img{position:absolute;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 1px rgb(48 29 16 / 64%)) drop-shadow(1px 4px 3px rgb(39 24 14 / 42%))}
+    .center-table{left:34%;bottom:12%;width:32%;height:43%;border:0;border-radius:0;background:url("Grafik/0_bord.PNG") center/contain no-repeat;box-shadow:none}
+    .center-table::before,.center-table::after{display:none}
+    .kettle{right:10%;bottom:39%;width:25%;height:49%;border:0;border-radius:0;background:url("Grafik/0_kittel.PNG") center/contain no-repeat;box-shadow:none}
+    .kettle::before,.kettle::after,.kettle-handle{display:none}
+    .notepad-overlay{display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px;z-index:60}
+    .notepad-sheet{position:relative;height:92%;max-height:80vh;max-width:90%;aspect-ratio:313/398;flex-shrink:0}
+    .notepad-sheet>img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+    .notepad-sheet textarea{position:absolute;left:15%;top:15%;width:70%;height:68%;padding:0;resize:none;border:0;outline:none;background:transparent;color:#33271e;font:clamp(11px,1.7vw,17px)/1.5 Georgia,serif}
+    .notepad-sheet .note-arrow{position:absolute;bottom:6%;padding:0;width:15%;height:8%;border:0;background:transparent;color:#382719;font:clamp(14px,2vw,24px) Georgia,serif}
+    .notepad-sheet .note-arrow:hover:not(:disabled){background:#6d48231a}
+    .note-prev{left:13%}.note-next{right:13%}
+    .note-page-number{position:absolute;bottom:7%;left:35%;width:30%;text-align:center;color:#60422c;font:clamp(9px,1.1vw,12px) Georgia,serif;pointer-events:none}
+    .mini-notepad{width:23px;height:27px;border:0;border-radius:0;background:url("Grafik/0_anteckningsblock.png") center/contain no-repeat;box-shadow:none}
+    .mini-notepad::after{display:none}
+    .book-cover,.mini-book{border:0;border-radius:0;background:transparent url("Grafik/1_spellbook.front-v2.png") center/contain no-repeat;box-shadow:none}
+    .book-button .book-cover{background-image:url("Grafik/1_spellbook-liggande.png")}
+    .book-cover::before,.book-cover::after{display:none}
+    .spellbook{transform:none}
+    .player-cover:has(> .spellbook-front-sheet){display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .spellbook-front-sheet{position:relative;height:100%;max-height:80dvh;aspect-ratio:1086/1448;max-width:94%;container-type:size}
+    .spellbook-front-sheet>img{display:block;width:100%;height:100%;object-fit:contain}
+    .spellbook-front-sheet .spellbook-digit,.spellbook-front-sheet .spellbook-digit:hover:not(:disabled){position:absolute;top:50.2%;width:2.9%;height:3.9%;padding:0;border:0;border-radius:0;background:transparent!important;box-shadow:none!important;color:#000;text-align:center;font:700 clamp(7px,3cqh,18px)/1 "Palatino Linotype",Georgia,serif}
+    .spellbook-front-sheet .lock-feedback{position:absolute;left:12%;bottom:6%;width:76%;margin:0;text-align:center;font-size:clamp(9px,2.5cqh,14px);color:#f7e3ba;text-shadow:0 1px 2px #000}
+    .table-notepad{width:18%;height:auto;aspect-ratio:3/2;padding:0;background:transparent url("Grafik/0_anteckningsblock-liggande.png") center/contain no-repeat;transform:none}
+    .table-notepad:hover:not(:disabled){background:transparent url("Grafik/0_anteckningsblock-liggande.png") center/contain no-repeat;filter:brightness(1.12) drop-shadow(0 3px 2px #301d106b)}
+    .book-button,.table-notepad{filter:drop-shadow(0 3px 2px rgb(48 29 16 / 42%))}
+    .book-button:hover:not(:disabled){filter:drop-shadow(0 3px 2px rgb(48 29 16 / 42%)) brightness(1.2)}
+    @media(max-width:760px){.players{grid-template-columns:1fr}.inventory-grid{gap:3px}}
+    @media(max-width:440px){.book-spread{min-height:280px}.page{padding:15px 10px;font-size:.9rem}.inventory-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+  </style>
+  <link rel="stylesheet" href="memories.css">
+  <link rel="stylesheet" href="settings.css">
+  <link rel="stylesheet" href="forest-ui.css">
+<link rel="stylesheet" href="shared-puzzle.css">
+<link rel="stylesheet" href="endgame.css">
+<link rel="stylesheet" href="diary-words.css">
+</head>
+<body>
+<main>
+  <div class="title-row"><div><h1>The Witch's Hut</h1><p class="intro">Temporary local two player layout. Each side has independent room position; shared puzzle state is shown in both panels.</p></div><div class="title-actions"><button id="reset-game" type="button">Reset game</button></div></div>
+  <div class="players" id="players"></div>
+</main>
+<div class="blocked-message" id="blocked-message" role="status" aria-live="polite" hidden>The outside door is locked. The curse must be broken first.</div>
+<script>
+  const SAVE_KEY = 'witches-hut-progress-v1';
+  const visibleImageBounds=new Map();
+  function visibleImageRect(img){
+    const rect=img.getBoundingClientRect(),css=getComputedStyle(img),nw=img.naturalWidth,nh=img.naturalHeight;
+    if(!nw||!nh)return rect;
+    let bounds=visibleImageBounds.get(img.currentSrc||img.src);
+    if(!bounds){
+      bounds={left:0,top:0,width:1,height:1};
+      try{
+        const canvas=document.createElement('canvas'),scale=Math.min(1,256/Math.max(nw,nh));canvas.width=Math.max(1,Math.round(nw*scale));canvas.height=Math.max(1,Math.round(nh*scale));
+        const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let left=canvas.width,top=canvas.height,right=-1,bottom=-1;
+        for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++)if(data[(y*canvas.width+x)*4+3]>20){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+        if(right>=0)bounds={left:left/canvas.width,top:top/canvas.height,width:(right-left+1)/canvas.width,height:(bottom-top+1)/canvas.height};
+      }catch{}
+      visibleImageBounds.set(img.currentSrc||img.src,bounds);
+    }
+    const scale=css.objectFit==='contain'?Math.min(rect.width/nw,rect.height/nh):null;
+    const width=scale===null?rect.width:nw*scale,height=scale===null?rect.height:nh*scale;
+    const pos=css.objectPosition.split(' '),fraction=(v,fallback)=>v?.endsWith('%')?parseFloat(v)/100:v==='top'||v==='left'?0:v==='bottom'||v==='right'?1:fallback;
+    return {left:rect.left+(rect.width-width)*fraction(pos[0],.5)+bounds.left*width,top:rect.top+(rect.height-height)*fraction(pos[1],.5)+bounds.top*height,width:bounds.width*width,height:bounds.height*height};
+  }
+  const pointInside=(rect,x,y)=>x>=rect.left&&x<=rect.left+rect.width&&y>=rect.top&&y<=rect.top+rect.height;
+  function worldItemAtPoint(scene,x,y){
+    if(!scene||scene.classList.contains('memory-room')||window.activeGameOverlay?.(scene.closest('.player')))return null;
+    const matches=[...scene.querySelectorAll('[data-role="decor"] img[data-layout-id]')].filter(img=>{
+      let id=img.dataset.itemId||img.dataset.layoutId;if(id==='trinket-14')id='key-14';if(id.startsWith('fire-tool-'))id=id.slice(10);
+      return itemCatalog[id]&&!(id.startsWith('ort-')&&!state.cabinetUnlocked)&&pointInside(visibleImageRect(img),x,y);
+    });
+    return matches.at(-1)||null;
+  }
+  const itemCatalog={};
+  const catalogAdd=(id,name,description,src)=>itemCatalog[id]={name,description,src};
+  catalogAdd('caught-fly','Fly','A captured fly.','Grafik/1_fluga.png');
+  [
+    ['Lizard Slime','Slippery, luminous, and remarkably difficult to keep inside the bottle.'],
+    ['Tears of an Innocent','Collected before the world had a chance to disappoint their owner.'],
+    ['Bottled Moonlight','A pale glow skimmed from a pond at midnight.'],
+    ['Widow’s Sigh','A lingering breath that fogs the glass from within.'],
+    ['Dragon Spit','It smells faintly of scorched apples. Keep the stopper firmly in place.'],
+    ['Shadow Ink','For writing things that should only be read in darkness.'],
+    ['Mermaid’s Laughter','Tiny bubbles rise whenever someone tells a terrible joke.'],
+    ['Essence of Bad Dreams','A restless liquid that never quite settles.'],
+    ['Midnight Dew','Gathered from spiderwebs before the first rooster woke.'],
+    ['Borrowed Luck','A little good fortune. The previous owner may want it back.']
+  ].forEach(([name,text],i)=>catalogAdd(`flaska-${i+1}`,name,text,`Grafik/1_flaska${i+1}.PNG`));
+  [
+    ['Crushed Hearts','Brittle crimson fragments. Handle with a little more care this time.'],
+    ['Toad Warts','Sorted by size, though nobody has explained why.'],
+    ['Graveyard Dust','Dry earth from a place where the neighbours never complain.'],
+    ['Moth Wings','Soft, powdery wings that still seem drawn to candlelight.'],
+    ['Ground Dragon Teeth','A coarse powder with a rather argumentative temperament.'],
+    ['Forgotten Names','Whisper into the jar and something may whisper back.'],
+    ['Candied Spider Eggs','Sweet, crunchy, and best not counted too carefully.'],
+    ['Ashes of Old Promises','Very fine ash. Some pieces still feel warm.'],
+    ['Pickled Nightmares','Small unpleasant shapes suspended in sour brine.'],
+    ['Thirteen Last Wishes','The label insists there are thirteen. One seems to be missing.']
+  ].forEach(([name,text],i)=>catalogAdd(`burk-${i+1}`,name,text,`Grafik/1_burk${i+1}.png`));
+  const herbNames=['Tarragon','Rosemary','Sage','Thyme','Mint','Lavender','Oregano','Lemon Balm','Dill','Chamomile'];
+  herbNames.forEach((name,i)=>catalogAdd(`ort-${i+1}`,name,`A tied bundle of dried herbs. It appears to be ${name.toLowerCase()}.`, `Grafik/1_ort${i+1}.${i===0?'PNG':'png'}`));
+  const trinketNames=['Human Skull','Ram Skull','Bird Skull','Curved Fangs','Raven Figurine','Brass Bell','Mortar and Pestle','Tarnished Goblet','Candleholder','Incense Burner','Toad Figurine','Hourglass','Stitched Poppet','Old Key','Purple Crystals'];
+  const trinketTexts=['An empty gaze and a remarkably patient listener.','Heavy curling horns frame a weathered skull.','A long beak and hollow eyes, polished smooth with age.','A handful of curved teeth from something best left unidentified.','A watchful little raven perched on a wooden base.','A small bell with a surprisingly solemn voice.','The bowl is stained by years of grinding strange ingredients.','Something dark has settled in the bottom of this cup.','Old wax clings to the stem in thick, uneven drips.','A small vessel for fragrant smoke and less fragrant secrets.','A plump toad with a permanently suspicious expression.','The sand keeps its own counsel about how much time remains.','A small cloth figure, roughly stitched and much handled.','An old iron key. It might fit the chest.','A cluster of violet crystals, cool even beside the fire.'];
+  trinketNames.forEach((name,i)=>catalogAdd(i===13?'key-14':`trinket-${i+1}`,name,trinketTexts[i],`Grafik/1_trinket${i+1}.PNG`));
+  for(let i=1;i<=5;i++)catalogAdd(`tomflaska-${i}`,'Empty Bottle','An empty glass bottle, waiting for something unusual.',`Grafik/1_tomflaska${i}.png`);
+  catalogAdd('flint','Flint','A sharp-edged piece of flint. Strike it with steel to make sparks.','Grafik/1_flinta.PNG');
+  catalogAdd('tinder','Tinder','Dry, fibrous tinder, ready to catch a tiny spark.','Grafik/1_fnöske.PNG');
+  catalogAdd('steel','Fire Steel','A worn iron striker. Flint and tinder would make it useful.','Grafik/1_eldstal.PNG');
+  catalogAdd('firewood','Firewood','Dry pieces of wood, just the thing for the fire bowl.','Grafik/1_ved.PNG');
+  catalogAdd('deer-eye','Enchanted Eye','A painted blue eye. The deer portrait has a dark place where it might belong.','Grafik/1_oga.png');
+  catalogAdd('lantern','Glowing Bottle','A bottle filled with luminous brew. Use it to search the dark.','Grafik/1_flaska1.PNG');
+  for(let i=0;i<2;i++)catalogAdd(`north-box-key-${i}`,'Small brass key','A small key found inside the red jar. It fits the north-wall box.','Grafik/nyckel-01.png');
+  catalogAdd('raven-key','Raven key','A weathered iron key hidden in the painted raven’s beak.','Grafik/nyckel-02.png');
+  catalogAdd('dark-room-key','Outside Door Key',"This is the key to the outside door. Keep it safe until you have solved the final puzzle and broken the witch’s curse. Until then, the door will remain sealed.",'Grafik/nyckel-03.png');
+  const bookPages = [['A place for the first page.','The next page is waiting.'],['These words are temporary.','You can decide what belongs here.'],['More pages can be added later.','This book can hold the details you choose.']];
+  const createArt = (found,notepadFound) => [
+    `<div class="small-wall-shelf" data-layout-id="north-small-shelf" role="img" aria-label="Small wall shelf"></div><div class="hut-small-window" role="img" aria-label="A small round window"></div><div class="wall-shelf north-wall-shelf shelf-1" data-layout-id="north-shelf-1" role="img" aria-label="Wall shelf 1"></div><div class="wall-shelf north-wall-shelf shelf-2" data-layout-id="north-shelf-2" role="img" aria-label="Wall shelf 2"></div><div class="wall-shelf north-wall-shelf shelf-3" data-layout-id="north-shelf-3" role="img" aria-label="Wall shelf 3"></div><div class="wall-shelf north-wall-shelf shelf-4" data-layout-id="north-shelf-4" role="img" aria-label="Wall shelf 4"></div><div class="desk" aria-label="A wooden desk"><div class="desk-top"></div><div class="desk-front"></div><div class="desk-leg left"></div><div class="desk-leg right"></div><div class="desk-drawer"></div>${found?'':'<button class="book-button" data-action="pickup-book" type="button" aria-label="Pick up the Spellbook"><span class="spellbook"><span class="book-cover"></span></span></button>'}</div>`,
+    `<div class="small-door" aria-label="A small locked door"><span class="lock-plate"></span></div><div class="noticeboard" role="img" aria-label="Noticeboard"></div><div class="chest" aria-label="Locked chest"></div><div class="wall-shelf east-wall-shelf east-shelf-1" data-layout-id="east-shelf-1" role="img" aria-label="East wall shelf 1"></div><div class="wall-shelf east-wall-shelf east-shelf-2" data-layout-id="east-shelf-2" role="img" aria-label="East wall shelf 2"></div>`,
+    `<div class="pot-shelf" aria-label="A shelf with bottles and jars"></div><div class="wall-shelf" role="img" aria-label="A wooden wall shelf"></div><div class="wall-shelf south-extra-shelf" data-layout-id="south-extra-shelf" role="img" aria-label="An extra wooden wall shelf"></div><div class="center-table" aria-label="A small table in the middle">${notepadFound?'':'<button class="table-notepad" data-action="pickup-notepad" type="button" aria-label="Pick up the notepad"></button>'}</div><div class="firepit"></div><div class="kettle-handle"></div><div class="kettle" aria-label="A big kettle"></div>`,
+    `<div class="small-wall-shelf" data-layout-id="west-small-shelf" role="img" aria-label="Small wall shelf"></div><div class="herb-cabinet" role="img" aria-label="Herb cabinet"></div><button class="outside-door" data-action="outside-door" type="button" aria-label="Locked door to the outside"><span class="locked-mark"></span></button>`
+  ].map((art,wall)=>art+`<img class="room-box ${['north','east','south','west'][wall]}-box" src="Grafik/1_ask${[1,3,2,4][wall]}${wall===1?".utan-nyckelhal.png":".PNG"}" alt="Box ${[1,3,2,4][wall]}" data-layout-id="ask-${wall+1}">`);
+  const saved = (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'); } catch { return {}; } })();
+  const freshPlayer = () => ({wall:0,found:false,spread:0,testDark:false,lantern:false,lightSelected:false,hiddenItemFound:false,emptyBottle:false,ladle:false,inventory:[],chestUnlocked:false,deerOpen:false});
+  const state = {players:[0,1].map(i=>({...freshPlayer(),...(saved.players?.[i]||{})})),found:saved.found===true||saved.players?.some(p=>p.found===true)||false,bookUnlocked:saved.bookUnlocked===true,sharedSpread:saved.sharedSpread||0,bookPanelOpen:[false,false],bookOwner:null,notepadFound:saved.notepadFound===true,notepadOpen:[false,false],notepadPages:Array.isArray(saved.notepadPages)&&saved.notepadPages.length?saved.notepadPages:[''],notepadPage:[0,0],cabinetDigits:Array.isArray(saved.cabinetDigits)&&saved.cabinetDigits.length===4&&saved.cabinetDigits.every(n=>Number.isInteger(n)&&n>=0&&n<=9)?saved.cabinetDigits:[0,0,0,0],brewServings:saved.brewServings||0};
+  if(state.found) state.players.forEach(p=>p.found=true);
+  state.notepadFound=saved.notepadPickupVersion===2&&saved.notepadFound===true;
+  state.notepadOpen=[0,1].map(i=>saved.notesCollapsed?.[i]!==true);
+  state.cabinetUnlocked=saved.cabinetUnlocked===true;
+  state.bookLockDigits=Array.isArray(saved.bookLockDigits)&&saved.bookLockDigits.length===4&&saved.bookLockDigits.every(n=>Number.isInteger(n)&&n>=0&&n<10)?saved.bookLockDigits:[0,0,0,0];
+  state.chestUnlocked=saved.chestUnlocked===true;state.woodPlaced=saved.woodPlaced===true;
+  state.eastDoorOpen=saved.eastDoorOpen===true;
+  state.players.forEach((p,index)=>{p.chestUnlocked=typeof saved.players?.[index]?.chestUnlocked==='boolean'?saved.players[index].chestUnlocked:index===0&&state.chestUnlocked;p.deerOpen=saved.players?.[index]?.deerOpen===true;});
+  state.deerEyeOwner=saved.deerEyeOwner===0||saved.deerEyeOwner===1?saved.deerEyeOwner:null;
+  state.eyeOnTable=saved.eyeOnTable===true;
+  state.fireToolsPlaced=Array.isArray(saved.fireToolsPlaced)?[...new Set(saved.fireToolsPlaced.filter(id=>['flint','tinder','steel'].includes(id)))]:[];
+  state.fireLit=state.woodPlaced&&state.fireToolsPlaced.length===3;
+  const RECIPE=[['flaska-1','flaska-3'],['burk-4','burk-6'],['ort-7','flaska-8'],['burk-8','burk-9'],['burk-2','flaska-5']];
+  const POUR_WINDOW=1000;
+  // Pure state transition, also exercised by the recipe checks.
+  function evaluatePour(progress,player,item,time){
+    if(progress.step>=RECIPE.length)return {...progress,outcome:'ready'};
+    const pending=progress.pending;
+    if(RECIPE[progress.step][player]!==item||(pending&&(pending.player===player||time-pending.time>POUR_WINDOW)))return {step:0,pending:null,outcome:'fail'};
+    if(!pending)return {step:progress.step,pending:{player,time},outcome:'waiting'};
+    const step=progress.step+1;return {step,pending:null,outcome:step===RECIPE.length?'ready':'advance'};
+  }
+  state.recipeStep=Number.isInteger(saved.recipeStep)&&saved.recipeStep>=0&&saved.recipeStep<=5?saved.recipeStep:0;
+  state.brewReady=saved.brewReady===true&&state.fireLit;
+  state.ladleCharged=saved.ladleCharged===true&&state.fireLit;
+  if(!state.fireLit){state.recipeStep=0;state.brewServings=0;}
+  if(state.brewReady)state.recipeStep=5;
+  // Put down returns items to their original, editor-adjusted placements.
+  state.worldDrops={};
+  let pendingPour=null,pourTimer=null,audioContext=null;
+  catalogAdd('ladle','Ladle','A long-handled ladle. Use it to scoop the glowing brew into an empty bottle.','Grafik/1_slev.PNG');
+  function recipeMarkup(index){
+    return `<section class="recipe-book"><img src="Grafik/1_bok.oppen.png" alt="Open spellbook"><article class="private-recipe"><h3>Lantern Brew</h3><p>Your part, Player ${index+1}</p><ol>${RECIPE.map(pair=>`<li>${escapeHtml(itemCatalog[pair[index]].name)}<small>${pair[index].replace('flaska','Bottle').replace('burk','Jar').replace('ort','Herb').replace('-',' ')}</small></li>`).join('')}</ol></article><article class="recipe-instructions"><p>Light the fire first.</p><p>Add each pair together, in order.</p><p>One second. One shared rhythm.</p><p>Five pairs awaken the light.</p><p>A ladle and an empty bottle will carry it into the dark.</p></article></section>`;
+  }
+  function kettleMessage(text){document.querySelectorAll('[data-role="status"]').forEach(el=>el.textContent=text);}
+  function hiss(){
+    try{
+      if(!audioContext)audioContext=new (window.AudioContext||window.webkitAudioContext)();
+      audioContext.resume();
+      const buffer=audioContext.createBuffer(1,audioContext.sampleRate*.35,audioContext.sampleRate),data=buffer.getChannelData(0);
+      for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*(1-i/data.length);
+      const source=audioContext.createBufferSource(),gain=audioContext.createGain();source.buffer=buffer;gain.gain.value=.12;source.connect(gain);gain.connect(audioContext.destination);source.start();
+    }catch{}
+  }
+  function failBrew(){
+    clearTimeout(pourTimer);pendingPour=null;state.recipeStep=0;save();drawAll();hiss();
+    document.querySelectorAll('.kettle').forEach(el=>{el.classList.add('brew-failed');const spill=document.createElement('div');spill.className='brew-spill';spill.innerHTML=Array.from({length:8},(_,i)=>`<i style="--i:${i}"></i>`).join('');el.append(spill);setTimeout(()=>{el.classList.remove('brew-failed');spill.remove();},1500);});
+    kettleMessage('The kettle hisses and boils over! Start again with the first pair.');
+  }
+  function useKettle(index){
+    const p=state.players[index],id=p.selectedItem;
+    if(!state.fireLit){kettleMessage('The kettle is cold.');return;}
+    if(state.brewReady){
+      if(p.lantern){kettleMessage('You already have a lantern.');return;}
+      if(state.ladleCharged){kettleMessage('The ladle is full.');return;}
+      if(!state.brewServings){kettleMessage('There is no more brew in the kettle.');return;}
+      const bottle=p.inventory.find(item=>item.startsWith('tomflaska-'));
+      const hasLadle=p.inventory.includes('ladle');
+      if(!bottle||!hasLadle||id!=='ladle'){kettleMessage('You need a ladle and an empty bottle.');return;}
+      state.ladleCharged=true;state.brewServings--;save();drawAll();kettleMessage('The ladle holds a little glowing brew.');return;
+    }
+    if(!state.bookUnlocked){kettleMessage('You need a recipe.');return;}
+    if(!id||!p.inventory.includes(id)){kettleMessage('Select an ingredient in your inventory first.');return;}
+    const next=evaluatePour({step:state.recipeStep,pending:pendingPour},index,id,Date.now());
+    clearTimeout(pourTimer);
+    if(next.outcome==='fail'){failBrew();return;}
+    state.recipeStep=next.step;pendingPour=next.pending;
+    if(next.outcome==='waiting'){
+      pourTimer=setTimeout(()=>{if(pendingPour)failBrew();},POUR_WINDOW+10);
+      drawAll();kettleMessage(`Player ${index+1} is pouring. The other player must pour now!`);return;
+    }
+    if(next.outcome==='ready'){state.brewReady=true;state.brewServings=2;}
+    save();drawAll();kettleMessage(state.brewReady?'The brew glows! Enough for two bottle lanterns.':`Pair ${state.recipeStep}/5 complete. Prepare the next ingredients.`);
+  }
+  function pourLadleIntoBottle(index,bottle){
+    const p=state.players[index];
+    if(!state.fireLit){kettleMessage('The kettle is cold.');return false;}
+    if(p.selectedItem!=='ladle'||!p.inventory.includes('ladle')||!p.inventory.includes(bottle)||!bottle.startsWith('tomflaska-'))return false;
+    if(!state.ladleCharged){kettleMessage('The ladle is empty.');return false;}
+    if(p.lantern){kettleMessage('You already have a bottle lantern.');return false;}
+    p.inventory=p.inventory.filter(id=>id!==bottle);state.ladleCharged=false;p.lantern=true;p.lanternBottle=bottle;p.lightSelected=true;p.selectedItem=null;
+    save();drawAll();kettleMessage(`Player ${index+1}: the bottle now glows like a lantern.`);return true;
+  }
+  function completeBrewForTest(){
+    if(!state.fireLit){kettleMessage('Light the fire first. This test skips the recipe, not the fire puzzle.');return;}
+    clearTimeout(pourTimer);pendingPour=null;state.recipeStep=5;state.brewReady=true;
+    state.brewServings=Math.max(0,2-state.players.filter(player=>player.lantern).length-(state.ladleCharged?1:0));
+    save();drawAll();kettleMessage(`Test: brew puzzle completed. ${state.brewServings} lantern serving(s) ready. Use a ladle and an empty bottle at the kettle.`);
+  }
+  function decorateKettlePuzzle(decor,wall){
+    if(wall===2&&!state.worldDrops.ladle&&!state.players.some(p=>p.inventory.includes('ladle'))){
+      const img=document.createElement('img');img.className='trinket ladle-item';img.dataset.layoutId='ladle';img.src=itemCatalog.ladle.src;img.alt='Ladle';img.style.cssText='left:61%;top:52%;width:5%;height:18%';decor.append(img);
+    }
+    const kettle=decor.querySelector('.kettle');if(kettle){kettle.dataset.action='use-kettle';kettle.setAttribute('role','button');kettle.tabIndex=0;kettle.setAttribute('aria-label','Use the kettle');kettle.classList.toggle('brew-ready',state.brewReady);if(state.brewReady)kettle.innerHTML='<div class="brew-glow"></div>';}
+  }
+
+  state.players.forEach(p=>{p.inventory=Array.isArray(p.inventory)?p.inventory.filter(id=>itemCatalog[id]||/^memory-[0-8]-[01]$/.test(id)):[];p.selectedItem=p.inventory.includes(p.selectedItem)?p.selectedItem:null;});
+  state.players.forEach((p,index)=>{if(p.lantern&&!/^tomflaska-[1-5]$/.test(p.lanternBottle||''))p.lanternBottle=`tomflaska-${index+1}`;});
+  const lanternSource=index=>itemCatalog[state.players[index].lanternBottle]?.src||'Grafik/1_tomflaska1.png';
+  const save = () => {try{localStorage.setItem(SAVE_KEY,JSON.stringify({players:state.players,eastDoorOpen:state.eastDoorOpen,found:state.found,bookUnlocked:state.bookUnlocked,bookLockDigits:state.bookLockDigits,sharedSpread:state.sharedSpread,notepadPickupVersion:2,notepadFound:state.notepadFound,notepadPages:state.notepadPages,notesCollapsed:state.notepadOpen.map(open=>!open),chestUnlocked:state.chestUnlocked,deerEyeOwner:state.deerEyeOwner,eyeOnTable:state.eyeOnTable,woodPlaced:state.woodPlaced,fireToolsPlaced:state.fireToolsPlaced,recipeStep:state.recipeStep,brewReady:state.brewReady,ladleCharged:state.ladleCharged,worldDrops:state.worldDrops,cabinetUnlocked:state.cabinetUnlocked,cabinetDigits:state.cabinetDigits,brewServings:state.brewServings}))}catch{}};
+  const playerMarkup = index => `<section class="player" data-player="${index}"><h2>Player ${index+1}</h2><div class="scene" aria-label="Player ${index+1} room view"><div class="ceiling"></div><div class="beam"></div><div class="beam b2"></div><div class="label" data-role="wall-name"></div><div data-role="decor"></div><div class="player-cover" data-role="player-cover" hidden></div><div class="darkness" data-role="darkness" hidden></div></div><div class="nav"><button data-action="left" type="button">← Left</button><span class="wall-count" data-role="wall-count"></span><button data-action="right" type="button">Right →</button></div><div class="test-tools"><button data-action="enter-dark" type="button">Dark room test</button><button data-action="leave-dark" type="button" hidden>Return to hut</button><button data-action="test-brew" type="button">Test: brew ready</button><button data-action="test-kit" type="button">Test: give bottle + ladle</button><button data-action="fill-lantern" type="button" hidden>Fill lantern</button></div><p class="status" data-role="status" aria-live="polite"></p><section class="inventory"><div class="inventory-head"><h3>Inventory</h3><span class="small-note">10 item slots</span></div><div class="permanent-item"><span class="permanent-label">Permanent</span><button class="permanent-slot" data-action="open-book" type="button" title="Find the Spellbook first" disabled></button><span class="inventory-empty" data-role="permanent-label">Spellbook not found</span></div><div class="inventory-grid" data-role="inventory-grid" aria-label="Ten inventory slots"></div></section></section>`;
+  document.querySelector('#players').innerHTML=playerMarkup(0)+playerMarkup(1);
+  document.querySelectorAll('.player').forEach((panel,index)=>{
+    const layout=document.createElement('div');layout.className='player-layout';
+    const game=document.createElement('div');game.className='player-game';
+    [...panel.children].filter(el=>el.tagName!=='H2').forEach(el=>game.append(el));
+    const notes=document.createElement('aside');notes.className='notes-panel';notes.setAttribute('aria-label',`Player ${index+1} shared notes`);
+    notes.innerHTML=`<button type="button" class="notes-toggle" data-action="toggle-notes" aria-expanded="true" aria-controls="notes-body-${index}">▾ Shared notes</button><div class="notes-body" data-role="notes-body" id="notes-body-${index}"></div>`;
+    layout.append(game,notes);panel.append(layout);
+  });
+  const escapeHtml=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const frontMarkup=()=>`<section class="spellbook-front-sheet" data-action="book-lock" aria-label="Spellbook front cover"><img src="Grafik/1_spellbook.front-blank-wheels.png" alt="Illustrated spellbook cover with four digit wheels">${state.bookLockDigits.map((digit,i)=>`<button type="button" class="spellbook-digit" data-book-digit="${i}" style="left:${79.1+i*4.2}%" aria-label="Book digit ${i+1}: ${digit}. Click to change.">${digit}</button>`).join('')}<div class="lock-feedback" data-role="lock-feedback" aria-live="polite"></div></section>`;
+
+  const backMarkup=()=>`<img class="spellbook-back-image" src="Grafik/1_spellbook.back.PNG" alt="Back of the Spellbook with ten symbols, counted from zero at the top">`;
+  const insideMarkup=index=>recipeMarkup(index);
+  const notepadMarkup=index=>{const page=state.notepadPage[index],text=state.notepadPages[page]??'';return `<section class="notepad-sheet" aria-label="Shared Notepad"><img src="Grafik/0_anteckningsblock.png" alt="Notepad"><textarea data-action="write-notepad" data-player="${index}" data-page="${page}" aria-label="Shared notepad page ${page+1}" placeholder="Write a note...">${escapeHtml(text)}</textarea><button class="note-arrow note-prev" data-action="notepad-prev" type="button" aria-label="Previous page" ${page===0?'disabled':''}>←</button><span class="note-page-number">${page+1}</span><button class="note-arrow note-next" data-action="notepad-next" type="button" aria-label="Next page / new page">→</button></section>`};
+  const ingredientArt = Array.from({length:10},(_,i)=>({id:`burk-${i+1}`,name:`Burk ${i+1}`,src:`Grafik/1_burk${i+1}.png`})).concat(Array.from({length:10},(_,i)=>({id:`flaska-${i+1}`,name:`Flaska ${i+1}`,src:`Grafik/1_flaska${i+1}.PNG`})));
+  const trinketSpots = [
+    [0,1,22,35,9,13],[0,2,11,16,9,14],[0,3,68,17,10,11],[0,9,65,37,8,15],
+    [1,4,70,19,8,12],[1,5,80,40,9,16],[1,6,68,58,8,14],[3,14,20,65,8,9],
+    [2,7,39,49,9,12],[2,8,43,15,7,14],[2,10,69,17,9,12],[2,11,12,66,9,12],
+    [3,12,10,69,8,16],[3,13,72,63,10,17],[3,15,78,76,10,12]
+  ];
+  const furnishingArt=[{"file":"inredning-fagelbur-01.png","wall":0,"left":82,"top":8,"width":9,"height":10.67},{"file":"inredning-fagelbur-02.png","wall":2,"left":8,"top":8,"width":10,"height":26.67},{"file":"inredning-krukvaxt-01.png","wall":0,"left":7,"top":69,"width":10,"height":23.7},{"file":"inredning-krukvaxt-02.png","wall":1,"left":86,"top":69,"width":11,"height":26.07},{"file":"inredning-krukvaxt-03.png","wall":2,"left":30,"top":69,"width":10,"height":23.7},{"file":"inredning-krukvaxt-04.png","wall":3,"left":76,"top":70,"width":10,"height":23.7},{"file":"inredning-krukvaxt-05-klattervaxt.png","wall":0,"left":2,"top":5,"width":22,"height":52.15},{"file":"inredning-krukvaxt-06-klattervaxt.png","wall":3,"left":49,"top":4,"width":32,"height":37.93},{"file":"inredning-lykta-01.png","wall":0,"left":43,"top":7,"width":7,"height":18.67},{"file":"inredning-lykta-02.png","wall":1,"left":84,"top":8,"width":7,"height":8.3},{"file":"inredning-lykta-03.png","wall":2,"left":49,"top":8,"width":7,"height":18.67},{"file":"inredning-lykta-04.png","wall":3,"left":7,"top":8,"width":7,"height":8.3},{"file":"inredning-lykta-05.png","wall":3,"left":86,"top":8,"width":7,"height":18.67},{"file":"inredning-prydnad-01.png","wall":0,"left":36,"top":38,"width":7,"height":8.3},{"file":"inredning-prydnad-02.png","wall":1,"left":6,"top":29,"width":10,"height":26.67},{"file":"inredning-prydnad-03.png","wall":2,"left":29,"top":24,"width":8,"height":9.48},{"file":"inredning-prydnad-04.png","wall":3,"left":44,"top":28,"width":9,"height":24},{"file":"inredning-prydnad-05.png","wall":0,"left":78,"top":36,"width":8,"height":9.48},{"file":"inredning-prydnad-06.png","wall":1,"left":50,"top":7,"width":11,"height":29.33},{"file":"inredning-prydnad-07.png","wall":2,"left":77,"top":31,"width":10,"height":11.85},{"file":"inredning-prydnad-08.png","wall":3,"left":68,"top":38,"width":10,"height":26.67},{"file":"inredning-tavla-01.png","wall":0,"left":36,"top":17,"width":9,"height":10.67},{"file":"inredning-tavla-02.png","wall":1,"left":7,"top":55,"width":9,"height":24},{"file":"inredning-tavla-03.png","wall":2,"left":43,"top":31,"width":9,"height":10.67},{"file":"inredning-tavla-04.png","wall":3,"left":51,"top":52,"width":9,"height":24}];
+  function placeFurnishings(decor,wall){
+    for(const art of furnishingArt.filter(art=>art.wall===wall)){
+      const img=document.createElement('img');img.className='room-furnishing';img.src='Grafik/'+art.file;
+      const furnishingNames={fagelbur:'Bird cage',krukvaxt:'Potted plant',lykta:'Lantern',prydnad:'Ornament',tavla:'Painting'};
+      const kind=art.file.split('-')[1];
+      img.alt=`${furnishingNames[kind]||'Furnishing'} ${art.file.match(/\d+/)?.[0]||''}${art.file.includes('klattervaxt')?' (climbing plant)':''}`;
+      img.dataset.layoutId=art.file.replace('.png','');
+      if(art.file==='inredning-prydnad-05.png'){img.src='Grafik/inredning-prydnad-05.grov-utan-ansikte.png';img.alt='Rough crescent moon with hanging stars';}
+      if(art.file==='inredning-tavla-01.png'){img.dataset.action='inspect-raven';img.setAttribute('role','button');img.tabIndex=0;img.setAttribute('aria-label','Inspect the raven painting');img.style.cursor='pointer';}
+      if(art.file==='inredning-tavla-04.png'){img.src='Grafik/1_tavla.katt.PNG';img.dataset.action='inspect-cat';img.alt='Cat painting';img.setAttribute('role','button');img.tabIndex=0;img.setAttribute('aria-label','Inspect the cat painting');}
+      img.style.cssText=`left:${art.left}%;top:${art.top}%;width:${art.width}%;height:${art.height}%`;
+      decor.append(img);
+    }
+  }
+  function placeTrinkets(decor,wall){
+    if(wall===1)[1,2,3].forEach((n,i)=>{
+      const img=document.createElement('img');img.className='wall-painting';img.src=`Grafik/1_tavla${n}.${n===3?'png':'PNG'}`;img.alt=['Bird painting','Fox painting','Deer painting'][i];img.dataset.layoutId=`painting-${n}`;img.dataset.action='inspect-painting';img.setAttribute('role','button');img.tabIndex=0;img.style.left=`${8+i*14}%`;decor.append(img);
+    });
+    trinketSpots.filter(spot=>spot[0]===wall).forEach(([,n,left,top,width,height])=>{
+      if(n===14&&state.players.some(p=>p.inventory.includes('key-14')))return;
+      const img=document.createElement('img');img.className='trinket';img.src=`Grafik/1_trinket${n}.PNG`;img.alt=trinketNames[n-1]||`Trinket ${n}`;img.dataset.layoutId=`trinket-${n}`;
+      if(n===14){img.dataset.action='pickup-key';img.setAttribute('role','button');img.tabIndex=0;img.setAttribute('aria-label','Plocka upp nyckeln');}
+      img.style.cssText=`left:${left}%;top:${top}%;width:${width}%;height:${height}%`;decor.append(img);
+    });
+  }
+  const stockOrder = (() => {
+    let order;
+    try {order=JSON.parse(localStorage.getItem('witches-hut-shelf-order-v1'));} catch {}
+    if(!Array.isArray(order)||order.length!==20||new Set(order).size!==20||order.some(id=>!ingredientArt.some(a=>a.id===id))) {
+      order=ingredientArt.map(a=>a.id);
+      for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+      try {localStorage.setItem('witches-hut-shelf-order-v1',JSON.stringify(order));} catch {}
+    }
+    // The red jar is a puzzle anchor on the south wall, rather than random dressing.
+    const redJar=order.indexOf('burk-1');
+    [order[12],order[redJar]]=[order[redJar],order[12]];
+    try {localStorage.setItem('witches-hut-shelf-order-v1',JSON.stringify(order));} catch {}
+    return order.map(id=>ingredientArt.find(a=>a.id===id));
+  })();
+  const stockedShelves = new Set();
+  const emptyBottleShelves = (() => {
+    let slots;
+    try{slots=JSON.parse(localStorage.getItem('witches-hut-empty-bottle-shelves-v1'));}catch{}
+    if(!Array.isArray(slots)||slots.length!==5||new Set(slots).size!==5||slots.some(n=>!Number.isInteger(n)||n<0||n>7)){
+      const candidates=Array.from({length:8},(_,i)=>i);
+      for(let i=7;i>0;i--){const j=Math.floor(Math.random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];}
+      slots=candidates.slice(0,5);
+      try{localStorage.setItem('witches-hut-empty-bottle-shelves-v1',JSON.stringify(slots));}catch{}
+    }
+    return slots;
+  })();
+  const fitStock = shelf => {
+    const layer=shelf.querySelector('.shelf-stock');if(!layer)return;
+    const tall=shelf.classList.contains('pot-shelf'),cabinet=shelf.classList.contains('herb-cabinet'),iw=cabinet?1351:tall?1086:1448,ih=cabinet?1164:tall?1448:1086;
+    const scale=Math.min(shelf.clientWidth/iw,shelf.clientHeight/ih),w=iw*scale,h=ih*scale;
+    Object.assign(layer.style,{left:`${(shelf.clientWidth-w)/2}px`,top:`${(shelf.clientHeight-h)/2}px`,width:`${w}px`,height:`${h}px`});
+  };
+  const shelfResize = new ResizeObserver(entries=>entries.forEach(({target})=>fitStock(target)));
+  function stockShelves(decor,wall) {
+    for(const shelf of stockedShelves)if(!shelf.isConnected){shelfResize.unobserve(shelf);stockedShelves.delete(shelf);}
+    const offset=wall===0?0:wall===1?8:12;
+    const cabinet=decor.querySelector('.herb-cabinet');
+    if(cabinet){
+      cabinet.classList.toggle('is-open',state.cabinetUnlocked);
+      const layer=document.createElement('div');layer.className='shelf-stock';
+      if(state.cabinetUnlocked){const art=document.createElement('div');art.className='cabinet-open-art';layer.append(art);}
+      for(let i=0;i<10;i++){
+        if(state.players.some(p=>p.inventory.includes(`ort-${i+1}`)))continue;
+        const img=document.createElement('img'),row=Math.floor(i/4),col=i%4;
+        img.src=`Grafik/1_ort${i+1}.${i===0?'PNG':'png'}`;img.alt=`Herb ${i+1}`;
+        img.className='shelf-ingredient cabinet-herb';img.dataset.layoutId=`ort-${i+1}`;
+        if(state.cabinetUnlocked){img.dataset.action='pickup-herb';img.dataset.herbId=`ort-${i+1}`;img.setAttribute('role','button');img.tabIndex=0;img.setAttribute('aria-label',`Pick up herb ${i+1}`);}
+        img.style.cssText=`left:${17+col*17.5}%;top:${25+row*18}%;width:13%;height:24%`;
+        layer.append(img);
+      }
+      if(!state.cabinetUnlocked){
+      const doors=document.createElement('div');doors.className='cabinet-doors';doors.setAttribute('role','img');doors.setAttribute('aria-label','Herb cabinet doors');layer.append(doors);
+      const lock=document.createElement('button');lock.type='button';lock.className='cabinet-lock';lock.dataset.action='inspect-cabinet-lock';lock.setAttribute('aria-label','Inspect the cabinet lock');layer.append(lock);
+      }
+      cabinet.append(layer);stockedShelves.add(cabinet);shelfResize.observe(cabinet);fitStock(cabinet);
+    }
+    decor.querySelectorAll('.wall-shelf').forEach((shelf,index)=>{
+      if(shelf.dataset.layoutId==='north-shelf-5')return;
+      const layer=document.createElement('div');layer.className='shelf-stock';
+      for(let j=0;j<2;j++){
+        const art=stockOrder[offset+index*2+j],img=document.createElement('img');
+        img.src=art.src;img.alt=art.name;img.dataset.ingredient=art.id;img.dataset.layoutId=art.id;img.className='shelf-ingredient';
+        img.style.cssText=`left:${j?57.5:17.5}%;bottom:50%;width:25%;height:43%`;
+        layer.append(img);
+      }
+      const bottle=emptyBottleShelves.indexOf(offset/2+index);
+      if(bottle!==-1){
+        const img=document.createElement('img');img.src=`Grafik/1_tomflaska${bottle+1}.png`;img.alt=`Empty bottle ${bottle+1}`;
+        img.className='shelf-ingredient';img.dataset.layoutId=`tomflaska-${bottle+1}`;
+        img.style.cssText='left:41%;bottom:50%;width:18%;height:40%';layer.append(img);
+      }
+      shelf.append(layer);stockedShelves.add(shelf);shelfResize.observe(shelf);fitStock(shelf);
+    });
+    const tall=decor.querySelector('.pot-shelf');
+    if(tall){
+      const layer=document.createElement('div');layer.className='shelf-stock';
+      [25,49,73,92].forEach((baseline,j)=>{
+        const art=stockOrder[16+j],img=document.createElement('img');img.src=art.src;img.alt=art.name;img.dataset.ingredient=art.id;img.dataset.layoutId=art.id;img.className='shelf-ingredient';
+        img.style.cssText=`left:34.5%;bottom:${100-baseline}%;width:31%;height:11%`;layer.append(img);
+      });
+      tall.append(layer);stockedShelves.add(tall);shelfResize.observe(tall);fitStock(tall);
+    }
+  }
+  const fireToolArt={flint:{name:'Flint',src:'Grafik/1_flinta.PNG'},tinder:{name:'Tinder',src:'Grafik/1_fnöske.PNG'},steel:{name:'Fire steel',src:'Grafik/1_eldstal.PNG'}};
+  const fireToolAvailable=id=>!state.fireToolsPlaced.includes(id)&&!state.players.some(p=>p.inventory.includes(id));
+  function makeFireTool(id,locked=false){const img=document.createElement('img');img.src=fireToolArt[id].src;img.alt=fireToolArt[id].name;img.className='fire-tool';img.dataset.layoutId=`fire-tool-${id}`;if(!locked){img.dataset.action=`pickup-${id}`;img.setAttribute('role','button');img.tabIndex=0;img.setAttribute('aria-label',`Plocka upp ${fireToolArt[id].name}`);}return img;}
+  function placeFireTools(decor,wall){
+    const specs={0:['flint',25,54,5,5],1:['steel',79,72,6,5]};
+    if(specs[wall]){const [id,x,y,w,h]=specs[wall];if(fireToolAvailable(id)){const img=makeFireTool(id);img.style.cssText=`left:${x}%;top:${y}%;width:${w}%;height:${h}%`;decor.append(img);}}
+    const layer=decor.querySelector('.herb-cabinet .shelf-stock');
+    if(layer&&fireToolAvailable('tinder')){const img=makeFireTool('tinder',!state.cabinetUnlocked);img.classList.add('cabinet-tinder');img.style.cssText='left:68%;top:65%;width:12%;height:9%;z-index:2';layer.append(img);}
+  }
+  const inventoryArt=id=>itemCatalog[id]||fireToolArt[id]|| (id==='key-14'?{name:'Key',src:'Grafik/1_trinket14.PNG'}:id==='firewood'?{name:'Firewood',src:'Grafik/1_ved.PNG'}:{name:`Herb ${id.split('-')[1]}`,src:`Grafik/1_ort${id.split('-')[1]}.${id==='ort-1'?'PNG':'png'}`});
+  const woodAvailable=()=>!state.woodPlaced&&!state.worldDrops.firewood&&!state.players.some(p=>p.inventory.includes('firewood'));
+  const NOTICEBOARD_LETTERS={A:7,B:2,C:9,D:4,E:1,F:8,G:3,H:6};
+  const NOTICEBOARD_ROWS=[['H > C < F > E','29470'],['A > C < D < G','81630'],['C > D < H < B','57290'],['D > A < E < C','34810'],['A < G < F > E','92740'],['H < A > F < D','16380'],['E < B < D < H','58310'],['H < D < E < G','74920'],['E > C < G > D','63150'],['D < C < G > F','48560']];
+  const FOX_NUMBERS=[[0,34,20],[1,59,19],[2,79,31],[3,84,54],[4,75,73],[5,63,83],[6,40,82],[7,26,74],[8,18,56],[9,20,36]];
+  const foxHeld=[false,false],foxPointers=[null,null],foxTestHeld=[false,false];
+  function updateFoxHold(index,held){
+    foxHeld[index]=held||foxTestHeld[index];held=foxHeld[index];
+    const testButton=document.querySelector(`[data-player="${index}"] [data-action="test-fox-hold"]`);if(testButton){testButton.textContent=foxTestHeld[index]?'Test: release hand':'Test: hold handprint';testButton.setAttribute('aria-pressed',String(foxTestHeld[index]));}
+    document.querySelector(`[data-player="${index}"] .fox-hand`)?.classList.toggle('is-held',held);
+    const feedback=document.querySelector(`[data-player="${index}"] .fox-code-feedback`);if(feedback)feedback.textContent=held?'tell your friend to go look':state.players[index].foxSolved?'Correct code!':'';
+    const other=document.querySelector(`[data-player="${1-index}"]`);
+    other.querySelectorAll('.west-box,.held-box-sheet>img').forEach(img=>{img.src=`Grafik/1_ask4${held?'.oppen':''}.PNG`;img.alt=held?'Open box':'Closed box';});
+  }
+  function releaseFoxHands(){for(let i=0;i<2;i++){foxPointers[i]=null;updateFoxHold(i,false);}}
+  window.addEventListener('pointerup',event=>{for(let i=0;i<2;i++)if(foxPointers[i]===event.pointerId){foxPointers[i]=null;updateFoxHold(i,false);}},true);
+  window.addEventListener('pointercancel',releaseFoxHands,true);window.addEventListener('blur',releaseFoxHands);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseFoxHands();});
+  function showFoxPainting(index){
+    const p=state.players[index],overlay=document.querySelector(`[data-player="${index}"] .item-image-overlay`),input=p.foxInput||'';
+    overlay.dataset.mode='fox';overlay.innerHTML=`<section class="fox-puzzle" aria-label="Fox painting code puzzle"><div class="fox-picture"><img src="${p.foxSolved?"Grafik/1_tavla2.blod.PNG":"Grafik/1_tavla2.PNG"}" alt="${p.foxSolved?'Fox painting with a bloody handprint and the words push me and dont let go':'Fox painting with digits 0 to 9'}">${p.foxSolved?'<button type="button" class="fox-hand" data-fox-hold aria-label="Hold the handprint to open your companion’s box"></button>':FOX_NUMBERS.map(([digit,x,y])=>`<button type="button" class="fox-number" data-fox-number="${digit}" style="left:${x-5}%;top:${y-4.5}%" aria-label="${digit}"></button>`).join('')}</div><output class="fox-code-output" aria-label="Entered code" aria-live="polite">${input.padEnd(4,'·')}</output><p class="fox-code-feedback" role="status">${p.foxSolved?'Correct code!':input.length===4?'Wrong code. Try again.':''}</p></section>`;overlay.hidden=false;
+  }
+  function showSouthBox(index){
+    const p=state.players[index],overlay=document.querySelector(`[data-player="${index}"] .item-image-overlay`),open=state.players.some(player=>player.southBoxOpen);
+    if(!Array.isArray(p.southBoxDigits)||p.southBoxDigits.length!==5)p.southBoxDigits=[0,0,0,0,0];
+    overlay.dataset.mode='south-box';overlay.innerHTML=`<section class="south-box-sheet" aria-label="The box under the table"><img src="Grafik/1_ask2${open?'.oppen':''}.PNG" alt="${open?'Open box':'Locked box'}">${open?'<button type="button" class="south-box-note" data-action="read-box-note" aria-label="Read the note in the box"><img src="Grafik/1_lapp.png" alt="A note in the box"></button>':`<div class="south-box-lock"><img src="Grafik/1_kodlas2.png" alt="Five-digit combination lock">${p.southBoxDigits.map((digit,n)=>`<button class="south-box-digit" type="button" data-south-box-digit="${n}" style="left:${16+n*14.5}%" aria-label="Digit ${n+1}: ${digit}. Click to change."><span class="south-box-digit-face">${digit}</span></button>`).join('')}</div>`}</section>`;overlay.hidden=false;
+  }
+  function showNoticeboard(index){
+    const overlay=document.querySelector(`[data-player="${index}"] .item-image-overlay`),p=state.players[index];
+    const flipped=Array.isArray(p.noticeboardFlips)?p.noticeboardFlips:[];
+    const notes=index===0?Object.entries(NOTICEBOARD_LETTERS).map(([letter,value],n)=>`<div class="board-note letter-note" style="--note-angle:${n%2?2:-3}deg"><span class="board-note-inner"><span class="board-note-face">${letter} = ${value}</span></span></div>`).join(''):NOTICEBOARD_ROWS.map(([statement,code],n)=>`<button type="button" class="board-note ${flipped.includes(n)?'is-flipped':''}" data-notice-note="${n}" style="--note-angle:${n%2?1.5:-1.5}deg" aria-label="${flipped.includes(n)?code:escapeHtml(statement)}. Turn the note over" aria-pressed="${flipped.includes(n)}"><span class="board-note-inner"><span class="board-note-face board-note-front" aria-hidden="${flipped.includes(n)}">${escapeHtml(statement)}</span><span class="board-note-face board-note-back" aria-hidden="${!flipped.includes(n)}">${code}</span></span></button>`).join('');
+    overlay.dataset.mode='noticeboard';overlay.innerHTML=`<section class="noticeboard-sheet" aria-label="Player ${index+1}s anslagstavla"><img src="Grafik/1_anslagstavla.png" alt="Noticeboard"><div class="noticeboard-notes ${index===0?'letter-notes':''}">${notes}</div></section>`;overlay.hidden=false;
+  }
+  function showRavenPainting(index){
+    const overlay=document.querySelector(`[data-player="${index}"] .item-image-overlay`);
+    const available=!state.eastDoorOpen&&!state.players.some(p=>p.inventory.includes('raven-key'));
+    overlay.dataset.mode='raven';
+    overlay.innerHTML=`<section class="raven-painting-sheet" aria-label="Raven and skull painting"><img src="Grafik/inredning-tavla-01.png" alt="Original raven standing on a skull">${available?'<button type="button" class="raven-beak-key" data-raven-action="take-key" aria-label="Take the key from the raven’s beak"><img src="Grafik/nyckel-02.png" alt="Weathered iron key"></button>':''}</section>`;
+    overlay.hidden=false;
+  }
+  const eyeAvailable=()=>state.deerEyeOwner===null&&!state.eyeOnTable&&!state.players.some(p=>p.inventory.includes('deer-eye'));
+  function showChestContents(overlay,preview=false){
+    const index=Number(overlay.closest('.player').dataset.player);
+    overlay.dataset.mode='chest';overlay.innerHTML=`<section class="chest-top-sheet" aria-label="Player ${index+1} chest"><img src="Grafik/1_kista.topview.PNG" alt="Inside the chest">${index===0&&woodAvailable()?'<button type="button" class="chest-top-wood" data-action="pickup-wood" aria-label="Pick up the firewood"></button>':''}${index===1&&(preview===true||eyeAvailable())?'<button type="button" class="chest-top-eye" data-action="inspect-chest-eye" aria-label="Inspect the enchanted eye"></button>':''}</section>`;overlay.hidden=false;
+  }
+  function showDeerPainting(index,preview=false){
+    const p=state.players[index],overlay=document.querySelector(`[data-player="${index}"] .item-image-overlay`),installed=state.deerEyeOwner===index;
+    overlay.dataset.mode='deer';
+    overlay.innerHTML=!preview&&p.deerOpen&&installed?`<section class="deer-hatch-sheet" aria-label="Player ${index+1} hidden compartment"><img src="Grafik/1_lucka.oppen.png" alt="Open hidden compartment"><button type="button" class="deer-hatch-door" data-deer-action="close" aria-label="Close the hatch"></button></section>`:`<section class="deer-painting-sheet"><img src="Grafik/1_tavla3.png" alt="Deer painting" data-deer-action="open" role="button" tabindex="0"><button type="button" class="deer-eye-socket" data-deer-action="${installed?'remove':'insert'}" aria-label="${installed?'Take the eye back':'Place the enchanted eye'}">${installed||preview?'<img src="Grafik/1_oga.png" alt="Enchanted eye">':''}</button></section>`;
+    overlay.hidden=false;
+    window.renderDeerMemory?.(index);
+  }
+  function useDeerEye(index,action){
+    const p=state.players[index],message=text=>document.querySelector(`[data-player="${index}"] [data-role="status"]`).textContent=text;
+    if(action==='insert'){
+      if(state.deerEyeOwner!==null||p.selectedItem!=='deer-eye'||!p.inventory.includes('deer-eye')){message('An eye is missing.');return;}
+      p.inventory=p.inventory.filter(id=>id!=='deer-eye');p.selectedItem=null;state.deerEyeOwner=index;state.eyeOnTable=false;p.deerOpen=true;
+    }else if(action==='open'){
+      if(state.deerEyeOwner!==index){message('The painting will not open without its eye.');return;}p.deerOpen=true;
+    }else if(action==='close'){p.deerOpen=false;}
+    else if(action==='remove'){
+      if(state.deerEyeOwner!==index||p.deerOpen)return;
+      if(p.inventory.length+(p.lantern?1:0)>=10){message('Your inventory is full. Put something down before removing the eye.');return;}
+      state.deerEyeOwner=null;p.inventory.push('deer-eye');p.selectedItem='deer-eye';
+    }else return;
+    save();drawAll();showDeerPainting(index);
+    if(action==='remove')message('The eye can be shared.');
+  }
+  function itemAction(index,action){
+    const p=state.players[index],panel=document.querySelector(`[data-player="${index}"]`),message=text=>panel.querySelector('[data-role="status"]').textContent=text;
+    const add=id=>{if(p.inventory.length+(p.lantern?1:0)>=10){message('Your inventory is full (10 slots).');return false;}p.inventory.push(id);return true;};
+    if(['pickup-flint','pickup-tinder','pickup-steel'].includes(action)){const id=action.slice(7);if((id==='tinder'&&!state.cabinetUnlocked)||!fireToolAvailable(id)||!add(id))return;p.selectedItem=id;}
+    else if(action==='pickup-key'){if(state.players.some(player=>player.inventory.includes('key-14'))||!add('key-14'))return;p.selectedItem='key-14';}
+    else if(action==='use-chest'){
+      if(p.chestUnlocked){showChestContents(panel.querySelector('.item-image-overlay'));return;}
+      if(p.selectedItem!=='key-14'||!p.inventory.includes('key-14')){message('You need a key.');return;}
+      p.chestUnlocked=true;if(index===0)state.chestUnlocked=true;p.selectedItem=null;
+    }
+    else if(action==='pickup-wood'){if(index!==0||!p.chestUnlocked||!woodAvailable()||!add('firewood'))return;p.selectedItem='firewood';}
+    else if(action==='use-firepit'){
+      if(state.fireLit){message('The fire is already burning.');return;}
+      const id=p.selectedItem;
+      if(!p.inventory.includes(id)||(!fireToolArt[id]&&id!=='firewood')){message('Select firewood, flint, tinder or fire steel in your inventory.');return;}
+      if(id==='firewood')state.woodPlaced=true;else if(!state.fireToolsPlaced.includes(id))state.fireToolsPlaced.push(id);
+      p.inventory=p.inventory.filter(item=>item!==id);p.selectedItem=null;
+    }else return;
+    state.fireLit=state.woodPlaced&&state.fireToolsPlaced.length===3;
+    save();drawAll();
+    document.querySelectorAll('.item-image-overlay[data-mode="chest"]:not([hidden])').forEach(showChestContents);
+    message(action==='use-chest'?'The chest is unlocked.':action==='use-firepit'?(state.fireLit?'Flint, fire steel and tinder ignite the wood. The fire is burning!':`The fire bowl still needs: ${[...(!state.woodPlaced?['firewood']:[]),...Object.keys(fireToolArt).filter(id=>!state.fireToolsPlaced.includes(id)).map(id=>fireToolArt[id].name.toLowerCase())].join(', ')}.`):action==='pickup-key'?'Key picked up and selected.':fireToolArt[action.slice(7)]?`${fireToolArt[action.slice(7)].name} picked up and selected.`:'Firewood picked up and selected.');
+  }
+  const kettleHangers=new Set();
+  function attachKettleHanger(decor){
+    for(const entry of kettleHangers)if(!entry.kettle.isConnected){entry.resize.disconnect();entry.changes.disconnect();kettleHangers.delete(entry);}
+    const kettle=decor.querySelector('.kettle');if(!kettle)return;
+    const scene=decor.closest('.scene'),svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.classList.add('kettle-hanger');svg.setAttribute('role','img');svg.setAttribute('aria-label','Ceiling hook and chain supporting the kettle');decor.prepend(svg);
+    const update=()=>{
+      const s=scene.getBoundingClientRect(),r=kettle.getBoundingClientRect(),w=scene.clientWidth,h=scene.clientHeight;
+      if(!w||!h)return;
+      const scale=Math.min(r.width/1086,r.height/1448),imageHeight=1448*scale;
+      const x=r.left-s.left-scene.clientLeft+r.width/2;
+      const ringY=r.top-s.top-scene.clientTop+(r.height-imageHeight)/2+imageHeight*.025;
+      const ceiling=Math.min(h*.085,ringY-20),unit=Math.max(1.5,w/320),start=ceiling+unit*5;
+      svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+      let links='',scratches='',looseLines='';
+      const count=Math.max(0,Math.ceil((ringY-start)/(unit*3.2)));
+      for(let i=0;i<count;i++){
+        const y=start+(ringY-start)*(i+.5)/count;
+        const cx=x+Math.sin(i*2.7)*unit*.45,rx=unit*(i%2?.9:1.65),ry=unit*(2.05+Math.sin(i*1.9)*.25);
+        const path=`M${cx-rx*.1} ${y-ry} C${cx+rx*1.25} ${y-ry*1.12},${cx+rx*1.1} ${y+ry*.65},${cx+rx*.15} ${y+ry} C${cx-rx*1.3} ${y+ry*1.15},${cx-rx*1.1} ${y-ry*.6},${cx-rx*.1} ${y-ry}`;
+        links+=`<path d="${path}" transform="rotate(${Math.sin(i*3.1)*11} ${cx} ${y})"/>`;
+        looseLines+=`<path d="${path}" transform="translate(${Math.sin(i*4.3)*unit*.5} ${Math.cos(i*2.1)*unit*.35})"/><path d="M${cx-rx-unit*.4} ${y-ry*.65}q${-unit*.8} ${ry*.7},${unit*.35} ${ry*1.45}"/>`;
+        scratches+=`<path d="M${cx-rx*.65} ${y-ry*.55}l${unit*.25} ${ry*.8}m${rx*.8} ${ry*.2}l${unit*.45} ${ry*.32}"/>`;
+      }
+      const hook=`M${x-unit*3.2} ${ceiling-unit*3}l${unit*6.1} ${unit*.3}M${x-unit*.2} ${ceiling-unit*3}l${unit*.3} ${unit*3.1}c${unit*4.2} ${-unit*1.3},${unit*4.1} ${unit*6.5},${-unit*.1} ${unit*6}q${-unit*3.3} ${-unit*.2} ${-unit*1.8} ${-unit*3.1}`;
+      svg.innerHTML=`<g fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="#171916" stroke-width="${unit*1.5}"><path d="${hook}"/>${links}</g><g stroke="#42484b" stroke-width="${unit*.8}"><path d="${hook}"/>${links}</g><g stroke="#181714" stroke-width="${unit*.23}" opacity=".9"><path d="${hook}" transform="translate(${unit*.55} ${-unit*.3})"/>${looseLines}</g><g stroke="#9b8e6f" stroke-width="${unit*.24}" opacity=".75">${scratches}</g></g>`;
+    };
+    const resize=new ResizeObserver(update);resize.observe(kettle);resize.observe(scene);
+    const changes=new MutationObserver(update);changes.observe(kettle,{attributes:true,attributeFilter:['style']});
+    kettleHangers.add({kettle,resize,changes});update();
+  }
+  const drawPlayer=index=>{
+    const p=state.players[index],panel=document.querySelector(`[data-player="${index}"]`),names=['North wall','East wall','South wall','West wall'];
+    p.testDark=p.inBackRoom===true;
+    if(!p.lantern)p.lightSelected=false;
+    const scene=panel.querySelector('.scene');scene.classList.toggle('dark-room',p.testDark);
+    scene.classList.toggle('back-room',p.inBackRoom===true);
+    scene.querySelector('.phosphor-clue')?.remove();
+    if(!p.testDark&&p.wall===0)scene.insertAdjacentHTML('beforeend',`<div class="phosphor-clue" role="img" aria-label="Glowing drawing of a chest with two iron bands and a keyhole. Code fragment: ${index===0?'7x0x3 (digits one, three and five; x marks a missing digit)':'x3x5x (digits two and four; x marks a missing digit)'}."><svg viewBox="0 0 240 230" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 92 49 43 192 48 218 94 211 158 40 162 23 92 190 99 218 94M190 99 192 48M190 99 187 162M40 162 39 98M23 92 190 99M32 118 189 124 215 115M37 136 188 140 213 131M65 45 49 94 57 120M82 46 68 95 74 122M155 48 147 97 148 122M173 48 165 98 165 123"/><path d="m103 119 28 1-1 32-26-1Z"/><path d="M115 130a3 3 0 1 0 5 0m-3 4-2 9h6l-2-9"/><path d="m46 73 133 5M52 149l40-1m48-1 36 1"/></g><text x="120" y="210" text-anchor="middle" fill="currentColor" font-family="Georgia,serif" font-size="36" letter-spacing="7" transform="rotate(-2 120 210)">${index===0?'7x0x3':'x3x5x'}</text></svg></div>`);
+    panel.querySelector('[data-role="wall-name"]').textContent=names[p.wall];panel.querySelector('[data-role="wall-count"]').textContent=`Wall ${p.wall+1} / 4`;
+    const decor=panel.querySelector('[data-role="decor"]');
+    if(p.testDark){
+      if(index===1)decor.innerHTML='';
+      else{
+        if(!Array.isArray(p.darkHatchDigits)||p.darkHatchDigits.length!==4)p.darkHatchDigits=[0,0,0,0];
+        decor.innerHTML=`<div class="dark-wall-hatch"><img src="Grafik/1_lucka.${p.darkHatchOpen?'oppen':'stangd'}.png" alt="${p.darkHatchOpen?'Open wall hatch':'Wall hatch with a four-digit combination lock'}">${p.darkHatchOpen?'':p.darkHatchDigits.map((digit,n)=>`<button type="button" class="dark-hatch-digit" data-dark-hatch-digit="${n}" style="left:${63+n*4.33}%" aria-label="Lock digit ${n+1}: ${digit}. Click to change."><span class="dark-hatch-digit-face">${digit}</span></button>`).join('')}</div>`;
+      }
+      if(!state.players.some(player=>player.inventory.includes('dark-room-key')))decor.insertAdjacentHTML('beforeend','<img class="trinket dark-floor-key" data-layout-id="dark-room-key" src="Grafik/nyckel-03.png" alt="Outside door key on the floor" style="left:18%;top:78%;width:7%;height:14%;object-fit:contain">');
+    }else decor.innerHTML=createArt(state.found,state.notepadFound)[p.wall];
+    if(!p.testDark){placeFurnishings(decor,p.wall);placeTrinkets(decor,p.wall);stockShelves(decor,p.wall);placeFireTools(decor,p.wall);decorateKettlePuzzle(decor,p.wall);}attachKettleHanger(decor);
+    const deer=decor.querySelector('[data-layout-id="painting-3"]');if(deer&&state.deerEyeOwner===index&&p.deerOpen){deer.src='Grafik/1_lucka.oppen.png';deer.alt='Open deer painting compartment';}
+    const fox=decor.querySelector('[data-layout-id="painting-2"]');if(fox&&p.foxSolved)fox.src='Grafik/1_tavla2.blod.PNG';
+    const noticeboard=decor.querySelector('.noticeboard');if(noticeboard){noticeboard.dataset.action='inspect-noticeboard';noticeboard.setAttribute('role','button');noticeboard.tabIndex=0;noticeboard.setAttribute('aria-label','Inspect the noticeboard');}
+    const southBox=decor.querySelector('[data-layout-id="ask-3"]');if(southBox){southBox.dataset.action='inspect-south-box';southBox.setAttribute('role','button');southBox.tabIndex=0;southBox.style.cursor='pointer';southBox.setAttribute('aria-label','Inspect the box under the table');if(state.players.some(player=>player.southBoxOpen))southBox.src='Grafik/1_ask2.oppen.PNG';}
+    const heldBox=decor.querySelector('.west-box');if(heldBox){heldBox.src=`Grafik/1_ask4${foxHeld[1-index]?'.oppen':''}.PNG`;heldBox.dataset.action='inspect-held-box';heldBox.setAttribute('role','button');heldBox.tabIndex=0;heldBox.style.cursor='pointer';}
+    const eastDoor=decor.querySelector('.small-door');if(eastDoor){
+      eastDoor.classList.toggle('is-open',state.eastDoorOpen);
+      eastDoor.setAttribute('aria-label',state.eastDoorOpen?'Open door into complete darkness':'Locked door to the dark room');
+      if(!state.eastDoorOpen)eastDoor.insertAdjacentHTML('beforeend','<button type="button" class="east-door-lock" data-action="unlock-east-door" aria-label="Unlock the east door with the raven key"></button>');
+      else eastDoor.insertAdjacentHTML('beforeend','<button type="button" class="east-door-entry" data-action="enter-back-room" aria-label="Go through the open doorway"></button>');
+    }
+    if(state.eyeOnTable){const table=decor.querySelector('.center-table');if(table){const eye=document.createElement('img');eye.className='table-eye';eye.src='Grafik/1_oga.png';eye.alt='Enchanted Eye';eye.dataset.layoutId='deer-eye';table.append(eye);}}
+    decor.querySelectorAll('[data-layout-id]').forEach(el=>{let id=el.dataset.itemId||el.dataset.layoutId;if(id==='trinket-14')id='key-14';if(id.startsWith('fire-tool-'))id=id.slice(10);if(!itemCatalog[id])return;if(state.players.some(player=>player.inventory.includes(id)||(player.lantern&&player.lanternBottle===id))){el.remove();return;}el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label',`Inspect ${itemCatalog[id].name}`);});
+    const chest=decor.querySelector('.chest');if(chest){chest.classList.toggle('is-open',p.chestUnlocked);chest.dataset.action='use-chest';chest.setAttribute('role','button');chest.tabIndex=0;chest.setAttribute('aria-label',p.chestUnlocked?'Look inside the chest':'Unlock the chest');}
+    const firepit=decor.querySelector('.firepit');if(firepit){firepit.dataset.action='use-firepit';firepit.setAttribute('role','button');firepit.tabIndex=0;firepit.setAttribute('aria-label',state.woodPlaced?'Fire bowl with wood':'Add wood to the fire bowl');firepit.classList.toggle('has-wood',state.woodPlaced);firepit.classList.toggle('is-burning',state.fireLit);if(state.fireLit)firepit.setAttribute('aria-label','Fire bowl with burning wood');}
+    panel.querySelector('[data-role="status"]').textContent=p.testDark?(p.lightSelected?'Lantern selected.':'It is dark.'):`You are looking at the ${names[p.wall]}.`;
+    panel.querySelector('[data-action="left"]').hidden=p.testDark;panel.querySelector('[data-action="right"]').hidden=p.testDark;
+    panel.querySelector('[data-action="enter-dark"]').hidden=true;panel.querySelector('[data-action="leave-dark"]').hidden=true;
+    let backButton=panel.querySelector('[data-action="leave-back-room"]');if(!backButton){backButton=document.createElement('button');backButton.type='button';backButton.dataset.action='leave-back-room';backButton.textContent='← Return to hut';panel.querySelector('.nav').append(backButton);}
+    backButton.hidden=!p.inBackRoom;
+    if(p.inBackRoom){
+      panel.querySelector('[data-role="wall-name"]').textContent='Back room';panel.querySelector('[data-role="wall-count"]').textContent='Back room';
+      panel.querySelector('[data-role="status"]').textContent=p.lightSelected?'Lantern selected.':p.lantern?'It is dark.':'You need a light.';
+      panel.querySelector('[data-action="left"]').hidden=true;panel.querySelector('[data-action="right"]').hidden=true;panel.querySelector('[data-action="enter-dark"]').hidden=true;
+    }
+    panel.querySelector('[data-action="test-brew"]').textContent=state.brewReady?'Test: brew puzzle solved ✓':'Test: solve brew puzzle';
+    panel.querySelector('[data-action="fill-lantern"]').hidden=!(state.brewServings>0&&p.emptyBottle&&p.ladle&&!p.lantern);
+    panel.querySelector('[data-action="test-kit"]').textContent=p.emptyBottle&&p.ladle?'Test: bottle + ladle ✓':'Test: give bottle + ladle';
+    panel.querySelector('[data-action="test-brew"]').hidden=false;
+    panel.querySelector('[data-action="test-kit"]').hidden=true;
+    panel.querySelector('[data-action="fill-lantern"]').hidden=true;
+    let lightTest=panel.querySelector('[data-action="test-dark-room-light"]');if(!lightTest){lightTest=document.createElement('button');lightTest.type='button';lightTest.dataset.action='test-dark-room-light';panel.querySelector('.test-tools').append(lightTest);}
+    lightTest.textContent=p.inBackRoom&&p.darkRoomTestLight?'Test: enable darkness':'Test: illuminate dark room';
+    lightTest.setAttribute('aria-pressed',String(!!(p.inBackRoom&&p.darkRoomTestLight)));
+    let holdTest=panel.querySelector('[data-action="test-fox-hold"]');if(!holdTest){holdTest=document.createElement('button');holdTest.type='button';holdTest.dataset.action='test-fox-hold';panel.querySelector('.test-tools').append(holdTest);}
+    holdTest.textContent=foxTestHeld[index]?'Test: release hand':'Test: hold handprint';holdTest.setAttribute('aria-pressed',String(foxTestHeld[index]));
+    const darkness=panel.querySelector('[data-role="darkness"]');darkness.hidden=!p.inBackRoom||p.darkRoomTestLight===true;
+    darkness.style.background=p.lantern&&p.lightSelected?'':'#000';
+    darkness.style.setProperty('--light-x','-100%');darkness.style.setProperty('--light-y','-100%');
+    const grid=panel.querySelector('[data-role="inventory-grid"]');grid.innerHTML=Array.from({length:10},(_,slotIndex)=>{const id=p.inventory[slotIndex-(p.lantern?1:0)];if(id){const art=inventoryArt(id);return `<button type="button" class="slot inventory-herb ${p.selectedItem===id?'selected':''}" data-inventory-item="${id}" aria-label="${art.name}" aria-pressed="${p.selectedItem===id}" title="Select ${art.name}"><span class="slot-number">${slotIndex+1}</span><img src="${art.src}" alt="${art.name}"></button>`}return slotIndex===0&&p.lantern?`<button class="slot lantern-slot ${p.lightSelected?'selected':''}" data-action="toggle-light" type="button" aria-label="Glowing bottle lantern" title="Select lantern"><span class="slot-number">1</span><span class="lantern-art" aria-hidden="true" style="--bottle-image:url('${lanternSource(index)}')"><img src="${lanternSource(index)}" alt=""></span></button>`:`<div class="slot" aria-label="Empty slot ${slotIndex+1}"><span class="slot-number">${slotIndex+1}</span></div>`}).join('');
+    const slot=panel.querySelector('[data-action="open-book"]');slot.disabled=!state.found;slot.innerHTML=state.found?'<span class="mini-book" aria-hidden="true"></span>':'';slot.title=state.found?'Open the Spellbook':'Find the Spellbook first';panel.querySelector('[data-role="permanent-label"]').textContent=state.found?'The Spellbook':'Spellbook not found';
+    const bookView=panel.querySelector('[data-role="player-cover"]');
+    if(state.bookUnlocked&&state.found&&state.bookOwner===index) {bookView.innerHTML=insideMarkup(index);bookView.hidden=false;}
+    else if(state.found&&p.wall===0&&state.bookPanelOpen[index]) {bookView.innerHTML=index===1?backMarkup():frontMarkup();bookView.hidden=false;}
+    else {bookView.innerHTML='';bookView.hidden=true;}
+    const notepadView=panel.querySelector('[data-role="notes-body"]');
+    if(notepadView.dataset.page!==String(state.notepadPage[index])){notepadView.innerHTML=notepadMarkup(index);notepadView.dataset.page=String(state.notepadPage[index]);}
+    const noteText=notepadView.querySelector('textarea');if(noteText&&noteText.value!==state.notepadPages[state.notepadPage[index]])noteText.value=state.notepadPages[state.notepadPage[index]];
+    const notesVisible=state.notepadFound&&state.notepadOpen[index];
+    notepadView.hidden=!notesVisible;panel.querySelector('.notes-panel').classList.toggle('is-collapsed',!notesVisible);
+    if(noteText)noteText.disabled=!state.notepadFound;
+    if(window.renderMemories)window.renderMemories(index);
+    if(window.renderCrystalBall)window.renderCrystalBall(index);
+    const noteToggle=panel.querySelector('[data-action="toggle-notes"]');noteToggle.disabled=!state.notepadFound;noteToggle.setAttribute('aria-expanded',String(notesVisible));noteToggle.textContent=!state.notepadFound?'Find the notepad':notesVisible?'▾ Shared notes':'▸ Shared notes';
+  };
+  const drawAll=()=>{drawPlayer(0);drawPlayer(1)};
+  document.querySelector('#reset-game').addEventListener('click',()=>{
+    foxTestHeld.fill(false);releaseFoxHands();
+    state.players=[freshPlayer(),freshPlayer()];
+    state.found=false;
+    state.bookUnlocked=false;
+    state.sharedSpread=0;
+    state.bookPanelOpen=[false,false];
+    state.bookOwner=null;
+    state.notepadFound=false;
+    state.notepadPages=[''];
+    state.notepadPage=[0,0];
+    state.notepadOpen=[true,true];
+    state.brewServings=0;
+    state.cabinetDigits=[0,0,0,0];
+    state.cabinetUnlocked=false;
+    state.bookLockDigits=[0,0,0,0];state.eastDoorOpen=false;state.chestUnlocked=false;state.deerEyeOwner=null;state.eyeOnTable=false;state.woodPlaced=false;state.fireToolsPlaced=[];state.fireLit=false;state.recipeStep=0;state.brewReady=false;state.ladleCharged=false;state.worldDrops={};pendingPour=null;clearTimeout(pourTimer);
+    document.querySelectorAll('.item-image-overlay').forEach(el=>el.hidden=true);
+    try{localStorage.removeItem(SAVE_KEY)}catch{}
+    drawAll();
+    document.querySelectorAll('[data-role="status"]').forEach((el,index)=>{el.textContent=`Player ${index+1}: game reset. You are looking at the North wall.`});
+  });
+  const move=(index,delta)=>{const p=state.players[index];if(p.testDark)return;p.wall=(p.wall+delta+4)%4;save();drawPlayer(index)};
+  const pickup=()=>{state.found=true;state.players.forEach(p=>p.found=true);state.bookPanelOpen=[state.players[0].wall===0,state.players[1].wall===0];save();drawAll()};
+  document.querySelectorAll('.player').forEach(panel=>{
+    const index=Number(panel.dataset.player);
+    panel.addEventListener('click',event=>{const b=event.target.closest('[data-action]');if(!b)return;const p=state.players[index];switch(b.dataset.action){case'toggle-notes':if(!state.notepadFound)break;state.notepadOpen[index]=!state.notepadOpen[index];save();drawPlayer(index);break;case'left':move(index,-1);break;case'right':move(index,1);break;case'enter-dark':if(state.eastDoorOpen){p.inBackRoom=true;p.wall=1;save();drawPlayer(index);}break;case'leave-dark':p.inBackRoom=false;p.testDark=false;p.lightSelected=false;p.wall=1;save();drawPlayer(index);break;case'test-brew':completeBrewForTest();break;case'test-kit':p.emptyBottle=true;p.ladle=true;save();drawPlayer(index);break;case'fill-lantern':if(p.inventory.length>=10){panel.querySelector('[data-role="status"]').textContent='Your inventory is full (10 slots).';break;}if(state.brewServings>0&&p.emptyBottle&&p.ladle&&!p.lantern){state.brewServings--;p.emptyBottle=false;p.lantern=true;save();drawAll()}break;case'toggle-light':p.lightSelected=!p.lightSelected;drawPlayer(index);break;case'collect-dark-placeholder':if(p.inBackRoom&&p.lantern&&p.lightSelected&&b.classList.contains('revealed')){p.hiddenItemFound=true;save();drawPlayer(index)}break;case'pickup-book':pickup();break;case'pickup-notepad':state.notepadFound=true;state.notepadOpen=[true,true];save();drawAll();break;case'open-notepad':if(state.notepadFound){state.notepadOpen[index]=true;drawPlayer(index)}break;case'close-notepad':state.notepadOpen[index]=false;drawPlayer(index);break;case'notepad-prev':if(state.notepadPage[index]>0){state.notepadPage[index]--;drawAll()}break;case'notepad-next':if(state.notepadPage[index]+1>=state.notepadPages.length)state.notepadPages.push('');state.notepadPage[index]++;save();drawAll();break;case'open-book':if(state.bookUnlocked){state.bookOwner=index;state.bookPanelOpen=[false,false];state.bookPanelOpen[index]=true;drawAll()}else if(state.players[index].wall!==0){panel.querySelector('[data-role="status"]').textContent='The Spellbook is closed.'}else{state.bookPanelOpen=state.bookPanelOpen.map((_,i)=>i===index);drawAll()}break;case'close-book':state.bookOwner=null;state.bookPanelOpen[index]=false;drawAll();break;case'inside-prev':if(state.sharedSpread>0){state.sharedSpread--;save();drawAll()}break;case'inside-next':if(state.sharedSpread<bookPages.length-1){state.sharedSpread++;save();drawAll()}break;case'outside-door':{const msg=document.querySelector('#blocked-message');msg.hidden=false;clearTimeout(msg.hideTimer);msg.hideTimer=setTimeout(()=>msg.hidden=true,2600);break}}});
+    panel.addEventListener('click',event=>{
+      const digit=event.target.closest('[data-book-digit]');if(!digit||index!==0||state.bookUnlocked)return;
+      const n=Number(digit.dataset.bookDigit);state.bookLockDigits[n]=(state.bookLockDigits[n]+1)%10;
+      if(state.bookLockDigits.join('')==='3915'){
+        state.bookUnlocked=true;state.found=true;state.players.forEach(p=>p.found=true);state.bookOwner=1;state.bookPanelOpen=[false,true];save();drawAll();
+      }else{digit.textContent=state.bookLockDigits[n];digit.setAttribute('aria-label',`Book digit ${n+1}: ${state.bookLockDigits[n]}. Click to change.`);save();}
+    });
+    const itemOverlay=document.createElement('div');itemOverlay.className='player-cover item-image-overlay';itemOverlay.hidden=true;panel.querySelector('.scene').append(itemOverlay);
+    panel.addEventListener('pointerdown',event=>{
+      const hand=event.target.closest('[data-fox-hold]');if(!hand||!state.players[index].foxSolved||document.body.classList.contains('layout-editing')||event.button!==0)return;
+      event.preventDefault();foxPointers[index]=event.pointerId;hand.setPointerCapture(event.pointerId);updateFoxHold(index,true);
+    });
+    panel.addEventListener('lostpointercapture',event=>{if(foxPointers[index]===event.pointerId){foxPointers[index]=null;updateFoxHold(index,false);}});
+    panel.addEventListener('click',event=>{
+      if(document.body.classList.contains('layout-editing'))return;
+      if(event.target.closest('[data-action="test-fox-hold"]')){foxTestHeld[index]=!foxTestHeld[index];updateFoxHold(index,foxPointers[index]!==null);return;}
+      if(event.target.closest('[data-action="inspect-held-box"]')){itemOverlay.dataset.mode='held-box';itemOverlay.innerHTML=`<section class="held-box-sheet"><img src="Grafik/1_ask4${foxHeld[1-index]?'.oppen':''}.PNG" alt="The west-wall box"></section>`;itemOverlay.hidden=false;return;}
+      if(event.target.closest('[data-action="read-box-note"]')){itemOverlay.dataset.mode='box-note';itemOverlay.innerHTML='<img src="Grafik/1_lapp.png" alt="Note with code 4683">';itemOverlay.hidden=false;return;}
+      const foxNumber=event.target.closest('[data-fox-number]');if(foxNumber){
+        const p=state.players[index];if(p.foxSolved)return;
+        p.foxInput=((p.foxInput||'').length>=4?'':p.foxInput||'')+foxNumber.dataset.foxNumber;
+        if(p.foxInput.length===4&&p.foxInput==='4683')p.foxSolved=true;
+        itemOverlay.querySelector('.fox-code-output').textContent=p.foxInput.padEnd(4,'·');
+        itemOverlay.querySelector('.fox-code-feedback').textContent=p.foxInput.length<4?'':p.foxSolved?'Correct code!':'Wrong code. Try again.';save();if(p.foxSolved)showFoxPainting(index);return;
+      }
+      if(event.target.closest('[data-action="inspect-south-box"]')){showSouthBox(index);return;}
+      const southDigit=event.target.closest('[data-south-box-digit]');if(southDigit){
+        const p=state.players[index],n=Number(southDigit.dataset.southBoxDigit);if(state.players.some(player=>player.southBoxOpen))return;
+        p.southBoxDigits[n]=(p.southBoxDigits[n]+1)%10;southDigit.querySelector('.south-box-digit-face').textContent=p.southBoxDigits[n];southDigit.setAttribute('aria-label',`Digit ${n+1}: ${p.southBoxDigits[n]}. Click to change.`);
+        if(p.southBoxDigits.join('')==='58310'){p.southBoxOpen=true;save();drawAll();document.querySelectorAll('.item-image-overlay[data-mode="south-box"]:not([hidden])').forEach(overlay=>showSouthBox(Number(overlay.closest('.player').dataset.player)));}
+        else save();return;
+      }
+      const note=event.target.closest('[data-notice-note]');if(note){
+        if(index!==1)return;const n=Number(note.dataset.noticeNote),p=state.players[index];
+        const flipped=note.classList.toggle('is-flipped');p.noticeboardFlips=Array.isArray(p.noticeboardFlips)?p.noticeboardFlips:[];
+        p.noticeboardFlips=flipped?[...new Set([...p.noticeboardFlips,n])]:p.noticeboardFlips.filter(value=>value!==n);
+        note.setAttribute('aria-pressed',String(flipped));note.setAttribute('aria-label',`${flipped?NOTICEBOARD_ROWS[n][1]:NOTICEBOARD_ROWS[n][0]}. Turn the note over`);
+        note.querySelector('.board-note-front').setAttribute('aria-hidden',String(flipped));note.querySelector('.board-note-back').setAttribute('aria-hidden',String(!flipped));save();return;
+      }
+      if(event.target.closest('[data-action="test-dark-room-light"]')){
+        const p=state.players[index];p.darkRoomTestLight=!(p.inBackRoom&&p.darkRoomTestLight);p.inBackRoom=true;p.wall=1;
+        panel.querySelectorAll('.player-cover').forEach(overlay=>overlay.hidden=true);state.bookPanelOpen[index]=false;if(state.bookOwner===index)state.bookOwner=null;
+        save();drawPlayer(index);return;
+      }
+      const hatchDigit=event.target.closest('[data-dark-hatch-digit]');
+      if(hatchDigit){
+        const p=state.players[index];if(index!==0||!p.inBackRoom||(!p.darkRoomTestLight&&(!p.lantern||!p.lightSelected))||p.darkHatchOpen)return;
+        const n=Number(hatchDigit.dataset.darkHatchDigit);p.darkHatchDigits[n]=(p.darkHatchDigits[n]+1)%10;
+        if(p.darkHatchDigits.join('')==='5465'){p.darkHatchOpen=true;save();drawAll();panel.querySelector('[data-role="status"]').textContent='The lock clicks open. A memory star appears for each player.';}
+        else{hatchDigit.querySelector('.dark-hatch-digit-face').textContent=p.darkHatchDigits[n];hatchDigit.setAttribute('aria-label',`Lock digit ${n+1}: ${p.darkHatchDigits[n]}. Click to change.`);save();}
+        return;
+      }
+      if(event.target.closest('[data-action="enter-back-room"],[data-action="leave-back-room"]')){
+        const entering=!!event.target.closest('[data-action="enter-back-room"]');if(entering&&!state.eastDoorOpen)return;
+        const p=state.players[index];p.inBackRoom=entering;p.testDark=entering;p.wall=1;if(!entering)p.lightSelected=false;
+        panel.querySelectorAll('.player-cover').forEach(overlay=>overlay.hidden=true);state.bookPanelOpen[index]=false;if(state.bookOwner===index)state.bookOwner=null;
+        save();drawPlayer(index);return;
+      }
+      if(event.target.closest('[data-action="unlock-east-door"]')){
+        const p=state.players[index],status=panel.querySelector('[data-role="status"]');
+        if(state.eastDoorOpen)return;
+        if(p.selectedItem!=='raven-key'||!p.inventory.includes('raven-key')){status.textContent='You need a key.';return;}
+        state.eastDoorOpen=true;p.inventory=p.inventory.filter(id=>id!=='raven-key');p.selectedItem=null;save();drawAll();
+        document.querySelectorAll('.item-image-overlay[data-mode="raven"]:not([hidden])').forEach(overlay=>showRavenPainting(Number(overlay.closest('.player').dataset.player)));
+        status.textContent='The key turns. The door opens into complete darkness.';return;
+      }
+      if(event.target.closest('[data-action="inspect-raven"]')){showRavenPainting(index);return;}
+      if(event.target.closest('[data-action="inspect-cat"]')){itemOverlay.dataset.mode='cat';itemOverlay.innerHTML='<img src="Grafik/1_tavla.katt.animerad.webp" alt="Close-up of the cat painting">';itemOverlay.hidden=false;return;}
+      if(event.target.closest('[data-action="inspect-noticeboard"]')){
+        showNoticeboard(index);return;
+      }
+      if(!event.target.closest('[data-raven-action="take-key"]'))return;
+      const p=state.players[index];if(state.eastDoorOpen||state.players.some(player=>player.inventory.includes('raven-key')))return;
+      if(p.inventory.length+(p.lantern?1:0)>=10){panel.querySelector('[data-role="status"]').textContent='Your inventory is full. Free a slot before taking the key.';return;}
+      p.inventory.push('raven-key');p.selectedItem='raven-key';save();drawAll();
+      document.querySelectorAll('.item-image-overlay[data-mode="raven"]:not([hidden])').forEach(overlay=>showRavenPainting(Number(overlay.closest('.player').dataset.player)));
+      panel.querySelector('[data-role="status"]').textContent='Key collected.';
+    });
+    panel.addEventListener('click',event=>{const target=event.target.closest('[data-deer-action]');if(target)useDeerEye(index,target.dataset.deerAction);});
+    panel.addEventListener('keydown',event=>{if(event.target.matches('[data-deer-action][role="button"]')&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.target.click();}});
+    panel.addEventListener('click',event=>{const painting=event.target.closest('[data-action="inspect-painting"]');if(painting){if(painting.dataset.layoutId==='painting-3'){showDeerPainting(index);return;}if(painting.dataset.layoutId==='painting-2'){showFoxPainting(index);return;}itemOverlay.dataset.mode='painting';itemOverlay.innerHTML=`<img src="${painting.getAttribute('src')}" alt="${painting.alt}">`;itemOverlay.hidden=false;}});
+    panel.addEventListener('click',event=>{if(event.target.closest('[data-action="use-kettle"]'))useKettle(index);});
+    panel.addEventListener('click',event=>{if(event.target.closest('[data-action="inspect-cabinet-lock"]')){itemOverlay.dataset.mode='lock';itemOverlay.innerHTML=`<div class="cabinet-lock-sheet"><img src="Grafik/1_kodlas.png" alt="Combination lock with four digit fields">${state.cabinetDigits.map((digit,i)=>`<button type="button" class="lock-digit" data-lock-digit="${i}" style="left:${18+i*18}%" aria-label="Digit ${i+1}: ${digit}. Click for the next digit.">${digit}</button>`).join('')}</div>`;itemOverlay.hidden=false;}else if(event.target.closest('[data-action="left"], [data-action="right"]')){itemOverlay.hidden=true;}});
+    itemOverlay.addEventListener('click',event=>{const button=event.target.closest('[data-lock-digit]');if(!button)return;const digitIndex=Number(button.dataset.lockDigit);state.cabinetDigits[digitIndex]=(state.cabinetDigits[digitIndex]+1)%10;if(state.cabinetDigits.join('')==='8338'){state.cabinetUnlocked=true;document.querySelectorAll('.item-image-overlay').forEach(el=>el.hidden=true);save();drawAll();return;}save();document.querySelectorAll(`[data-lock-digit="${digitIndex}"]`).forEach(el=>{el.textContent=state.cabinetDigits[digitIndex];el.setAttribute('aria-label',`Digit ${digitIndex+1}: ${state.cabinetDigits[digitIndex]}. Click for the next digit.`)})});
+    itemOverlay.addEventListener('click',event=>{if(event.target===itemOverlay)itemOverlay.hidden=true;});
+    panel.addEventListener('click',event=>{const item=event.target.closest('[data-inventory-item]');if(item){const p=state.players[index];p.selectedItem=p.selectedItem===item.dataset.inventoryItem?null:item.dataset.inventoryItem;save();drawPlayer(index);return;}const target=event.target.closest('[data-action]');if(target&&['pickup-key','use-chest','pickup-wood','use-firepit','pickup-flint','pickup-tinder','pickup-steel'].includes(target.dataset.action))itemAction(index,target.dataset.action);});
+    panel.addEventListener('keydown',event=>{if(event.target.matches('[role="button"][data-action]')&&(event.key==='Enter'||event.key===' ')){if(event.target.dataset.action==='pickup-herb')return;event.preventDefault();event.target.click();}});
+    panel.addEventListener('click',event=>{
+      const herb=event.target.closest('[data-action="pickup-herb"]');if(!herb||!state.cabinetUnlocked)return;
+      const id=herb.dataset.herbId,p=state.players[index];
+      if(state.players.some(player=>player.inventory.includes(id)||(player.lantern&&player.lanternBottle===id)))return;
+      if(p.inventory.length+(p.lantern?1:0)>=10){panel.querySelector('[data-role="status"]').textContent='Your inventory is full (10 slots).';return;}
+      p.inventory.push(id);save();drawAll();panel.querySelector('[data-role="status"]').textContent=`Herb ${id.split('-')[1]} added to your inventory.`;
+    });
+    panel.addEventListener('keydown',event=>{if(event.target.matches('[data-action="pickup-herb"]')&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.target.click();}});
+    panel.querySelector('[data-role="player-cover"]').addEventListener('click',event=>{if(event.target===event.currentTarget){state.bookPanelOpen[index]=false;if(state.bookOwner===index)state.bookOwner=null;drawAll()}});
+    panel.addEventListener('input',event=>{if(!event.target.matches('[data-action="write-notepad"]'))return;const page=Number(event.target.dataset.page);state.notepadPages[page]=event.target.value;save();document.querySelectorAll(`[data-action="write-notepad"][data-page="${page}"]`).forEach(textarea=>{if(textarea!==event.target)textarea.value=event.target.value})});
+    panel.querySelector('.scene').addEventListener('pointermove',event=>{const p=state.players[index];if(!p.inBackRoom||!p.lantern||!p.lightSelected)return;const scene=event.currentTarget,rect=scene.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top;const darkness=panel.querySelector('[data-role="darkness"]');darkness.style.setProperty('--light-x',`${x/rect.width*100}%`);darkness.style.setProperty('--light-y',`${y/rect.height*100}%`);const target=panel.querySelector('.dark-placeholder');if(target){const item=target.getBoundingClientRect(),cx=item.left+item.width/2,cy=item.top+item.height/2;target.classList.toggle('revealed',Math.hypot(event.clientX-cx,event.clientY-cy)<72)}});
+    panel.querySelector('.scene').addEventListener('pointerleave',()=>{
+      const darkness=panel.querySelector('[data-role="darkness"]');darkness.style.setProperty('--light-x','-100%');darkness.style.setProperty('--light-y','-100%');panel.querySelector('.dark-placeholder')?.classList.remove('revealed');
+    });
+  });
+  drawAll();
+</script>
+<script>
+(() => {
+  const KEY = 'witches-hut-layout-v1';
+  const objects = {
+    'crystal-pickup': 'Crystal ball',
+    'light-portal': 'Light portal',
+    'skull-eye': 'Skull light source',
+    'morse-fly': 'Fly starting position',
+    'south-box-note': 'Note in the box',
+    'south-box-lock': 'Box lock',
+    'small-wall-shelf': 'Small wall shelf',
+    'dark-wall-hatch': 'Dark-room hatch',
+    'room-furnishing': 'Furnishing',
+    'table-eye': 'Eye on the table', 'chest-top-eye': 'Eye in the chest', 'deer-eye-socket': 'Eye in the deer painting',
+    'wall-painting': 'Painting',
+    'fire-tool': 'Fire tool',
+    'firepit-wood': 'Wood in the fire bowl',
+    trinket: 'Trinket',
+    'herb-cabinet': 'Herb cabinet',
+    'shelf-ingredient': 'Jar / bottle',
+    desk: 'Writing desk', noticeboard: 'Noticeboard', 'hut-small-window': 'Small window', 'pot-shelf': 'Tall shelf',
+    'wall-shelf': 'Wall shelf', 'outside-door': 'Outside door', 'forest-window': 'Large window',
+    'small-door': 'Interior door', chest: 'Chest', 'room-box': 'Box', 'center-table': 'Small table',
+    kettle: 'Cauldron', fire: 'Fire', firepit: 'Fire bowl', 'hanging-herbs': 'Herbs',
+    'book-button': 'Book', penholder: 'Pen holder', skull: 'Skull',
+    'table-notepad': 'Notepad', 'memory-position': 'Memory coin half'
+  };
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
+  try{if(!localStorage.getItem('hut-coin-row-v2')){saved['memory-desk:coin-size']={width:10.4,height:75};localStorage.setItem(KEY,JSON.stringify(saved));localStorage.setItem('hut-coin-row-v2','1');}}catch{}
+  let layout = structuredClone(saved), editing = false, drag = null, selected = null;
+  const style = document.createElement('style');
+  style.textContent = `
+    .layout-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px;margin-bottom:12px;border:1px solid #82775a;border-radius:6px;background:#242019}
+    .layout-toolbar span{font-size:.78rem;color:#dfcfaa;flex-basis:100%}
+    .layout-box{position:absolute;z-index:80;outline:1px dashed #f5d277;cursor:move;touch-action:none;background:#f5d27708}
+    .layout-tinder .layout-resize{right:-20px;bottom:-20px}.layout-tinder .layout-rotate{right:-26px;top:-26px}
+    .layout-box.active{outline:2px solid #ffe6a0;background:#f5d27718}
+    .layout-box-label{position:absolute;left:0;top:0;background:#211b12e8;color:#ffe6a0;font:11px system-ui;padding:2px 4px;white-space:nowrap;pointer-events:none}
+    .layout-resize{position:absolute;right:0;bottom:0;width:18px;height:18px;background:#ffe6a0;border:2px solid #33281b;cursor:nwse-resize;touch-action:none}
+    .layout-rotate{position:absolute;right:0;top:0;width:22px;height:22px;border:2px solid #33281b;border-radius:50%;background:#ffe6a0;color:#33281b;text-align:center;font:18px/18px system-ui;cursor:grab;touch-action:none}
+    .layout-angle{font-size:.8rem;color:#dfcfaa;display:flex;align-items:center;gap:5px}.layout-angle[hidden]{display:none}.layout-angle input{width:70px;padding:4px;background:#181611;color:#f0e0bc;border:1px solid #82775a;border-radius:4px}
+    .layout-editing .scene{outline:2px solid #c5a364}
+    .layout-editing .back-room .darkness{display:none!important}
+    .layout-editing .player-cover,.layout-editing .notepad-overlay{display:none!important}
+    .layout-editing .item-image-overlay:not([hidden]){display:flex!important}
+  `;
+  document.head.append(style);
+  const toolbar = document.createElement('div');
+  toolbar.className = 'layout-toolbar';
+  toolbar.innerHTML = `<button type="button" data-layout="toggle" aria-pressed="false">Edit layout</button><button type="button" data-layout="eye-chest" hidden>Eye in the chest</button><button type="button" data-layout="eye-painting" hidden>Eye in the painting</button><button type="button" data-layout="eye-table" hidden>Eye on the table</button><button type="button" data-layout="lock-digits" hidden>Edit lock digits</button><button type="button" data-layout="save" hidden>Save layout</button><button type="button" data-layout="cancel" hidden>Discard unsaved changes</button><button type="button" data-layout="reset" hidden>Reset layout</button><button type="button" data-layout="export" hidden>Export layout</button><span role="status">The layout is shared by both players.</span>`;
+  document.querySelector('.players').before(toolbar);
+  const angleControl=document.createElement('label');angleControl.className='layout-angle';angleControl.hidden=true;angleControl.innerHTML='Angle <input type="number" step="1" aria-label="Rotation in degrees" value="0">°';
+  toolbar.querySelector('[role="status"]').before(angleControl);
+  const angleInput=angleControl.querySelector('input');
+  const straighten=document.createElement('button');straighten.type='button';straighten.dataset.layout='straighten';straighten.hidden=true;straighten.textContent='Straighten';angleControl.after(straighten);
+  const status = text => toolbar.querySelector('[role="status"]').textContent = text;
+  const sceneOf = el => el.closest('.scene');
+  const keyOf = (el, name) => `${el.closest('.scene').classList.contains('back-room')?'back-room':state.players[Number(el.closest('.player').dataset.player)].wall}:${el.dataset.layoutId || name}`;
+  const originalStyles = new WeakMap();
+  const targets = () => [...document.querySelectorAll('.cabinet-clue-world')].map(el=>({el,name:'cabinet-clue-note',key:'cabinet-clue:player-'+el.closest('.player').dataset.player})).concat([...document.querySelectorAll('.scene:not(.dark-room) [data-role="decor"],.scene.back-room [data-role="decor"]')].filter(decor=>!decor.closest('.scene').querySelector('.item-image-overlay:not([hidden]),.morse-overlay')).flatMap(decor => Object.keys(objects).flatMap(name => [...decor.querySelectorAll(`.${name}`)].map(el => ({el, name, key:keyOf(el,name)})))).concat([...document.querySelectorAll('.item-image-overlay:not([hidden]) .south-box-note')].map(el=>({el,name:'south-box-note',key:'south-box:note'}))).concat([...document.querySelectorAll('.item-image-overlay:not([hidden]) .south-box-lock')].map(el=>({el,name:'south-box-lock',key:'south-box-lock:placement'}))).concat([...document.querySelectorAll('.memory-layer .memory-position,.deer-hatch-sheet .memory-position')].map(el=>({el,name:'memory-position',key:keyOf(el,'memory-position')}))).concat([...document.querySelectorAll('.item-image-overlay:not([hidden]) .chest-top-eye,.item-image-overlay:not([hidden]) .deer-eye-socket')].map(el=>({el,name:el.classList.contains('chest-top-eye')?'chest-top-eye':'deer-eye-socket',key:el.classList.contains('chest-top-eye')?'eye:chest':'eye:painting'}))).concat([...document.querySelectorAll('.item-image-overlay:not([hidden]) .lock-digit,.item-image-overlay:not([hidden]) .south-box-digit')].map(el=>({el,name:'lock-digit',key:el.hasAttribute('data-south-box-digit')?`south-box-lock-v2:digit-${el.dataset.southBoxDigit}`:`cabinet-lock:digit-${el.dataset.lockDigit}`}))).concat([...document.querySelectorAll('.memory-room .illness-prop')].map(el=>({el,name:'illness-prop',key:`memory:illness:player-${el.closest('.player').dataset.player}:${el.dataset.layoutId}`}))).concat([...document.querySelectorAll('.ap-exam-table .apprentice-prop')].map(el=>({el,name:'apprentice-prop',key:`memory:apprentice:player-${el.closest('.player').dataset.player}:${el.dataset.layoutId}`}))).concat(morseFlyTargets()).concat([...document.querySelectorAll('.item-image-overlay:not([hidden]) .skull-eye')].map(el=>({el,name:'skull-eye',key:'light:skull-eye'}))).concat([...document.querySelectorAll('.light-board .light-portal')].map(el=>({el,name:'light-portal',key:el.dataset.lightPortal==='transfer'?'light:transfer':'light:portal'}))));
+  const morseFlyTargets = () => [...document.querySelectorAll('.morse-overlay .morse-fly')].map(el=>({el,name:'morse-fly',key:'morse:bottom-left:'+el.dataset.layoutId}));
+  function setRect(el, rect) {
+    if(el.classList.contains('skull-eye'))window.dispatchEvent(new CustomEvent('light-eye-layout',{detail:rect}));
+    if(el.classList.contains('light-portal'))window.dispatchEvent(new CustomEvent('light-portal-layout',{detail:{rect,transfer:el.dataset.lightPortal==='transfer'}}));
+    for (const prop of ['left','top','width','height']) el.style[prop] = `${rect[prop]}%`;
+    if(el.classList.contains('south-box-lock'))el.style.height='auto';
+    if(el.classList.contains('table-notepad')){el.style.height='auto';el.style.aspectRatio='3 / 2';}
+    el.style.right = 'auto'; el.style.bottom = 'auto';
+    el.style.rotate=`${Number.isFinite(rect.rotation)?rect.rotation:0}deg`;
+  }
+  // Measure the painted pixels rather than the transparent image canvas.
+  const imageBounds = new Map();
+  function paintedRect(el) {
+    const r = el.getBoundingClientRect(), css = getComputedStyle(el);
+    if(Math.abs(parseFloat(css.rotate)||0)>.01)return r;
+    const isImage=el.tagName==='IMG';
+    const match = isImage?[null,el.currentSrc||el.src]:css.backgroundImage.match(/^url\(["']?(.*?)["']?\)$/);
+    if (!match) return r;
+    const url = match[1];
+    if (!imageBounds.has(url)) {
+      imageBounds.set(url, null);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d', {willReadFrequently:true});
+          ctx.drawImage(img,0,0);
+          const pixels = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+          let x0=canvas.width,y0=canvas.height,x1=-1,y1=-1;
+          for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++) {
+            if(pixels[(y*canvas.width+x)*4+3]>16){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
+          }
+          if(x1>=0)imageBounds.set(url,{w:canvas.width,h:canvas.height,x:x0,y:y0,bw:x1-x0+1,bh:y1-y0+1});
+        } catch {}
+        refresh();
+      };
+      img.src=url;
+    }
+    const b=imageBounds.get(url);
+    if(!b)return r;
+    const fit=isImage?css.objectFit==='contain':css.backgroundSize==='contain', scale=Math.min(r.width/b.w,r.height/b.h);
+    const sx=fit?scale:r.width/b.w, sy=fit?scale:r.height/b.h;
+    const offsetY=isImage?(css.objectPosition.includes('top')?0:css.objectPosition.includes('bottom')?r.height-b.h*sy:(r.height-b.h*sy)/2):(r.height-b.h*sy)/2;
+    return {left:r.left+(r.width-b.w*sx)/2+b.x*sx,top:r.top+offsetY+b.y*sy,width:b.bw*sx,height:b.bh*sy};
+  }
+  function refresh() {
+    document.querySelectorAll('.layout-box').forEach(el => el.remove());
+    const allTargets=targets(),deskCoins=allTargets.filter(item=>item.el.classList.contains('memory-desk-star'));
+    const selectedCoin=deskCoins.find(item=>item.key===selected);
+    const reference=(editing&&selectedCoin&&layout[selected])||layout['memory-desk:coin-size']||Object.entries(layout).filter(([key])=>key.includes(':memory-desk-memory-')).at(-1)?.[1];
+    if(reference&&Number.isFinite(reference.width)&&Number.isFinite(reference.height))layout['memory-desk:coin-size']={width:reference.width,height:reference.height};
+    for (const item of allTargets) {
+      if(!originalStyles.has(item.el))originalStyles.set(item.el,item.el.getAttribute('style')||'');
+      if(item.el.classList.contains('memory-desk-star')){
+        const slot=Number(item.el.dataset.fragment.split('-')[1]),size=layout['memory-desk:coin-size']||{width:10.4,height:75};
+        setRect(item.el,{left:slot*100/9,top:0,width:Math.min(10.4,size.width),height:size.height,rotation:0});
+      }else if(item.el.classList.contains('memory-shelf-star')){
+        const slot=Number(item.el.dataset.layoutId.split('-').at(-1));
+        setRect(item.el,{left:slot*100/9,top:-15,width:10.4,height:90,rotation:0});
+      }else if (layout[item.key]) setRect(item.el, layout[item.key]);
+      window.alignOpenMemoryJar?.(item.el,layout[item.key]);
+      if (!editing || (!['crystal-pickup','memory-position','illness-prop','apprentice-prop','cabinet-clue-note'].includes(item.name)&&!item.el.classList.contains('cabinet-tinder')&&!['trinket-12','trinket-15'].includes(item.el.dataset.layoutId))) continue;
+      const scene = sceneOf(item.el), s = scene.getBoundingClientRect(), r = paintedRect(item.el);
+      const box = document.createElement('div');
+      box.className = `layout-box${(item.el.classList.contains('cabinet-tinder')||item.name==='cabinet-clue-note'||['trinket-12','trinket-15'].includes(item.el.dataset.layoutId))?' layout-tinder':''}${selected === item.key ? ' active' : ''}`;
+      box.style.cssText = `left:${r.left-s.left-scene.clientLeft}px;top:${r.top-s.top-scene.clientTop}px;width:${r.width}px;height:${r.height}px`;
+      if(item.name==='cabinet-clue-note')box.style.zIndex='84';if(item.name==='apprentice-prop')box.style.zIndex='200';if(item.name==='memory-position')box.style.zIndex='85';if(item.name==='morse-fly'||item.name==='skull-eye')box.style.zIndex='150';
+      if(item.name==='shelf-ingredient'||item.name==='trinket'||item.name==='firepit-wood'||item.name==='fire-tool'||item.name==='table-eye')box.style.zIndex='82';
+      box.innerHTML = `<span class="layout-box-label">${item.name==='lock-digit'?`Digit ${Number(item.el.dataset.southBoxDigit??item.el.dataset.lockDigit)+1}`:item.el.title||item.el.alt||item.el.getAttribute('aria-label')||objects[item.name]}</span><span class="layout-resize" title="Resize"></span><span class="layout-rotate" title="Drag to rotate. Hold Shift for 15° steps.">↻</span>`;
+      box.addEventListener('pointerdown', e => {
+        if(e.button !== 0) return;
+        e.preventDefault(); e.stopPropagation(); selected = item.key;
+        try{scene.setPointerCapture(e.pointerId);}catch{}
+        const parent = item.el.offsetParent, p = parent.getBoundingClientRect();
+        const rect = {left:item.el.offsetLeft / parent.clientWidth*100,top:item.el.offsetTop / parent.clientHeight*100,width:item.el.offsetWidth / parent.clientWidth*100,height:item.el.offsetHeight / parent.clientHeight*100,rotation:layout[item.key]?.rotation||0};
+        const outer=item.el.getBoundingClientRect(), visual=paintedRect(item.el);
+        const cx=outer.left+outer.width/2,cy=outer.top+outer.height/2;
+        drag = {...item, rect, x:e.clientX,y:e.clientY,pw:parent.clientWidth,ph:parent.clientHeight,visual,outer,resize:e.target.classList.contains('layout-resize'),rotating:e.target.classList.contains('layout-rotate'),cx,cy,startAngle:Math.atan2(e.clientY-cy,e.clientX-cx)};
+        angleInput.value=String(Math.round(rect.rotation));
+        status(`${item.el.alt||objects[item.name]||'Digit'} selected. Drag ↻ to rotate or enter an angle.`);
+      });
+      scene.append(box);
+    }
+    window.groundCabinetObjects?.();
+  }
+  document.addEventListener('pointermove', e => {
+    if (!drag) return;
+    e.preventDefault();
+    const d=drag, dx=(e.clientX-d.x)/d.pw*100, dy=(e.clientY-d.y)/d.ph*100, r={...d.rect};
+    if(d.rotating){
+      const angle=Math.atan2(e.clientY-d.cy,e.clientX-d.cx),delta=Math.atan2(Math.sin(angle-d.startAngle),Math.cos(angle-d.startAngle))*180/Math.PI;
+      r.rotation=Math.round((d.rect.rotation+delta)/(e.shiftKey?15:1))*(e.shiftKey?15:1);angleInput.value=String(r.rotation);
+    }
+    else if(d.resize){
+      const scale=Math.max(0.05,1+((e.clientX-d.x)*d.visual.width+(e.clientY-d.y)*d.visual.height)/(d.visual.width**2+d.visual.height**2));
+      r.width*=scale;r.height*=scale;
+      r.left+=(d.visual.left-d.outer.left)/d.pw*100*(1-scale);
+      r.top+=(d.visual.top-d.outer.top)/d.ph*100*(1-scale);
+    }
+    else {r.left+=dx;r.top+=dy;}
+    if(['3:trinket-12','3:trinket-15'].includes(d.key))r.manualCabinetPlacement=true;
+    layout[d.key]=r;
+    refresh();
+  }, {passive:false});
+  document.addEventListener('pointerup', () => { drag=null; });
+  document.addEventListener('pointercancel', () => { drag=null; });
+  angleInput.addEventListener('input',()=>{
+    if(!selected||!Number.isFinite(angleInput.valueAsNumber))return;
+    const item=targets().find(item=>item.key===selected);if(!item)return;
+    if(!layout[selected]){const parent=item.el.offsetParent;layout[selected]={left:item.el.offsetLeft/parent.clientWidth*100,top:item.el.offsetTop/parent.clientHeight*100,width:item.el.offsetWidth/parent.clientWidth*100,height:item.el.offsetHeight/parent.clientHeight*100};}
+    layout[selected].rotation=angleInput.valueAsNumber;if(['3:trinket-12','3:trinket-15'].includes(selected))layout[selected].manualCabinetPlacement=true;refresh();
+  });
+  // Capture game interactions before the existing handlers, but keep wall navigation usable.
+  document.querySelector('#players').addEventListener('click', e => {
+    if(e.target.closest('[data-action="inspect-cabinet-lock"]')||e.target.classList.contains('item-image-overlay'))return;
+    if(editing && e.target.closest('.scene, .inventory, .test-tools')) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  toolbar.addEventListener('click', e => {
+    const action=e.target.dataset.layout;
+    if(!action)return;
+    if(action==='toggle') {
+      editing=!editing; if(!editing){document.querySelectorAll('[data-editor-preview]').forEach(el=>el.remove());document.querySelectorAll('.item-image-overlay').forEach(el=>el.hidden=true);} document.body.classList.toggle('layout-editing',editing);
+      e.target.textContent=editing?'Finish editing':'Edit layout';
+      e.target.setAttribute('aria-pressed',String(editing));
+      toolbar.querySelectorAll('button:not([data-layout="toggle"])').forEach(b=>b.hidden=!editing||['eye-chest','eye-painting','eye-table','lock-digits','reset'].includes(b.dataset.layout));
+      angleControl.hidden=!editing;
+      status(editing?'Drag the crystal ball, memory coins or memory room objects to move them. Use the corner handle to resize, then save the layout.':'The layout is shared by both players.');
+    }
+    if(action==='straighten'&&selected){angleInput.value='0';angleInput.dispatchEvent(new Event('input'));status('The selected object is straight again.');}
+    if(action==='eye-chest'||action==='eye-painting'||action==='eye-table') {
+      document.querySelectorAll('.item-image-overlay').forEach(el=>el.hidden=true);
+      const index=action==='eye-chest'?1:0;
+      state.players[index].testDark=false;
+      move(index,(action==='eye-table'?2:1)-state.players[index].wall);
+      if(action==='eye-chest')showChestContents(document.querySelector('.player[data-player="1"] .item-image-overlay'),true);
+      if(action==='eye-painting')showDeerPainting(0,true);
+      if(action==='eye-table'){
+        const table=document.querySelector('.player[data-player="0"] .center-table');
+        if(!table.querySelector('.table-eye')){const eye=document.createElement('img');eye.className='table-eye';eye.dataset.layoutId='deer-eye';eye.dataset.editorPreview='true';eye.src='Grafik/1_oga.png';eye.alt='Enchanted Eye';table.append(eye);}
+      }
+      status('Adjust the eye’s position, size and angle. Save the layout when ready.');
+    }
+    if(action==='lock-digits') {
+      if(state.players[0].testDark){state.players[0].testDark=false;drawPlayer(0);}
+      move(0,3-state.players[0].wall);
+      const lock=document.querySelector('[data-player="0"] [data-action="inspect-cabinet-lock"]');
+      if(!lock){status('The cabinet is already unlocked. Reset the game to edit the lock.');refresh();return;}
+      lock.click();
+      status('Drag the digits into their fields. Save the layout when ready.');
+    }
+    if(action==='save') {
+      try {localStorage.setItem(KEY,JSON.stringify(layout));saved=structuredClone(layout);status('Layout saved in this browser. Export it to keep a separate file.');}
+      catch {status('Could not save. Export the layout to a file instead.');}
+    }
+    if(action==='cancel'||action==='reset') {
+      layout=action==='reset'?{}:structuredClone(saved);
+      targets().forEach(({el})=>el.setAttribute('style',originalStyles.get(el)||''));
+      status(action==='reset'?'Default positions restored. Click Save layout to keep them.':'Unsaved changes discarded.');
+    }
+    if(action==='export') {
+      const url=URL.createObjectURL(new Blob([JSON.stringify(layout,null,2)],{type:'application/json'})), a=document.createElement('a');
+      a.href=url;a.download='witches-hut-layout.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      status('Layout exported. Use the file to transfer these positions into the project.');
+    }
+    refresh();
+  });
+  // Export all room configuration, including randomized shelf contents, separately from progress.
+  const setupExport=document.createElement('button');setupExport.type='button';setupExport.hidden=true;setupExport.textContent='Export playtest setup';
+  setupExport.addEventListener('click',event=>{event.stopPropagation();const setup={'witches-hut-layout-v1':JSON.stringify(layout)};for(const key of ['witches-hut-shelf-order-v1','witches-hut-empty-bottle-shelves-v1']){const value=localStorage.getItem(key);if(value)setup[key]=value;}const url=URL.createObjectURL(new Blob([JSON.stringify(setup,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='witches-hut-playtest-setup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Room layout and shelf contents exported for the two-computer playtest.');});toolbar.append(setupExport);
+  window.isCabinetObjectManual=id=>layout['3:'+id]?.manualCabinetPlacement===true;
+  window.getCabinetClueLayout=i=>layout['cabinet-clue:player-'+i];
+  window.refreshMemoryLayout=refresh;
+  // Reapply layouts after game renders without observing editor overlays themselves.
+  const observer=new MutationObserver(refresh);
+  document.querySelectorAll('[data-role="decor"]').forEach(el=>observer.observe(el,{childList:true}));
+  document.querySelectorAll('.item-image-overlay').forEach(el=>observer.observe(el,{childList:true,attributes:true,attributeFilter:['hidden']}));
+  window.addEventListener('resize',refresh);
+  refresh();
+})();
+
+</script>
+<script>
+  // Shared rule: fit every overlay to its available scene and viewport.
+  (() => {
+    const overlays = [...document.querySelectorAll('.player-cover, .overlay')];
+    function fitOverlays() {
+      for (const overlay of overlays) {
+        if (overlay.hidden || !overlay.clientHeight) continue;
+        const css = getComputedStyle(overlay);
+        const width = Math.min(overlay.clientWidth, innerWidth) - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight);
+        const height = Math.min(overlay.clientHeight, innerHeight - 24) - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom);
+        for (const content of overlay.children) {
+          if (!content.classList.contains('book-dialog')) continue;
+          content.style.zoom = '1';
+          const rect = content.getBoundingClientRect();
+          const naturalWidth = Math.max(rect.width, content.scrollWidth);
+          const naturalHeight = Math.max(rect.height, content.scrollHeight);
+          content.style.zoom = String(Math.min(1, width / naturalWidth, height / naturalHeight));
+        }
+      }
+    }
+    const observer = new MutationObserver(fitOverlays);
+    const resize = new ResizeObserver(fitOverlays);
+    overlays.forEach(overlay => {
+      observer.observe(overlay, {childList:true, subtree:true, attributes:true, attributeFilter:['hidden']});
+      resize.observe(overlay);
+    });
+    window.addEventListener('resize', fitOverlays);
+    fitOverlays();
+  })();
+</script>
+<script>
+(() => {
+  const root=document.querySelector('#players');
+  const owned=id=>state.players.some(p=>p.inventory.includes(id)||(p.lantern&&p.lanternBottle===id));
+  const locked=id=>(id.startsWith('ort-')||id==='tinder')&&!state.cabinetUnlocked;
+  const available=(id,index)=>!owned(id)&&!(id==='firewood'&&(index!==0||state.woodPlaced||!state.players[index].chestUnlocked))&&!(id==='deer-eye'&&(state.deerEyeOwner!==null||(!state.eyeOnTable&&(index!==1||!state.players[index].chestUnlocked))))&&!(fireToolArt[id]&&state.fireToolsPlaced.includes(id));
+  function inspect(index,id,inInventory){
+    if(!inInventory&&locked(id))return;
+    const art=id==='lantern'?{...itemCatalog.lantern,src:lanternSource(index)}:itemCatalog[id];if(!art)return;
+    const panel=root.querySelector(`[data-player="${index}"]`),overlay=panel.querySelector('.item-image-overlay');
+    overlay.dataset.mode='inspection';overlay.dataset.inspectId=id;
+    const action=(id==='trinket-11'||id==='trinket-1')?null:inInventory?'use':locked(id)?null:available(id,index)?'take':null;
+    const illustration=id==='lantern'?`<span class="lantern-art inspection-lantern" style="--bottle-image:url('${escapeHtml(art.src)}')"><img src="${escapeHtml(art.src)}" alt="${escapeHtml(art.name)}"></span>`:`<img src="${escapeHtml(art.src)}" alt="${escapeHtml(art.name)}">`;
+    overlay.innerHTML=`<figure class="inspection-sheet">${illustration}<figcaption><strong>${escapeHtml(art.name)}</strong><p>${escapeHtml(art.description)}</p>${locked(id)&&!inInventory?'<p>Behind the locked cabinet doors.</p>':''}<p class="inspection-feedback" role="status"></p></figcaption>${action?`<button type="button" data-inspect-action="${action}" data-inspect-id="${id}">${action==='take'?'Take':'Use'}</button>`:''}${inInventory&&id!=='lantern'&&id!=='caught-fly'?`<button type="button" data-inspect-action="drop" data-inspect-id="${id}">Put down</button>`:''}</figure>`;
+    overlay.hidden=false;
+    window.renderToadMemory?.(index);
+    window.inspectLightSkull?.(index);
+  }
+  root.addEventListener('click',event=>{
+    if(globalThis.hutApplyingDrop||event.target.closest('[data-cabinet-clue]')||document.body.classList.contains('layout-editing'))return;
+    const panel=event.target.closest('.player');if(!panel)return;const index=Number(panel.dataset.player),p=state.players[index];
+    const control=event.target.closest('[data-inspect-action]');
+    if(control){
+      event.preventDefault();event.stopImmediatePropagation();
+      const id=control.dataset.inspectId,overlay=panel.querySelector('.item-image-overlay');
+      if(control.dataset.inspectAction==='drop'){
+        if(id==='caught-fly'||!p.inventory.includes(id))return;
+        delete state.worldDrops[id];if(id==='deer-eye')state.eyeOnTable=true;
+        p.inventory=p.inventory.filter(item=>item!==id);if(p.selectedItem===id)p.selectedItem=null;
+        overlay.hidden=true;save();drawAll();
+        if(id==='deer-eye')root.querySelectorAll('[data-role="status"]').forEach(el=>el.textContent='The eye has been put down and can be shared.');
+        root.querySelectorAll('.item-image-overlay[data-mode="chest"]:not([hidden])').forEach(showChestContents);
+        return;
+      }
+      if(control.dataset.inspectAction==='use'){
+        if(id==='lantern'){p.lightSelected=!p.lightSelected;p.selectedItem=null;}else{if(!p.inventory.includes(id))return;p.selectedItem=id;}
+        overlay.hidden=true;save();drawPlayer(index);return;
+      }
+      if(locked(id)||!available(id,index)){inspect(index,id,false);return;}
+      if(p.inventory.length+(p.lantern?1:0)>=10){overlay.querySelector('.inspection-feedback').textContent='Your inventory is full.';return;}
+      delete state.worldDrops[id];if(id==='deer-eye')state.eyeOnTable=false;
+      overlay.hidden=true;
+      if(id==='key-14')itemAction(index,'pickup-key');
+      else if(id==='firewood')itemAction(index,'pickup-wood');
+      else if(fireToolArt[id])itemAction(index,`pickup-${id}`);
+      else{p.inventory.push(id);p.selectedItem=id;save();drawAll();}
+      root.querySelectorAll('.item-image-overlay[data-mode="inspection"]:not([hidden])').forEach(other=>{if(other.dataset.inspectId===id)inspect(Number(other.closest('.player').dataset.player),id,false);});
+      return;
+    }
+    const inventory=event.target.closest('[data-inventory-item]');
+    if(inventory){event.preventDefault();event.stopImmediatePropagation();if(p.selectedItem==='ladle'&&inventory.dataset.inventoryItem.startsWith('tomflaska-')){pourLadleIntoBottle(index,inventory.dataset.inventoryItem);return;}inspect(index,inventory.dataset.inventoryItem,true);return;}
+    if(event.target.closest('[data-action="toggle-light"]')){event.preventDefault();event.stopImmediatePropagation();inspect(index,'lantern',true);return;}
+    if(event.target.closest('.player-cover'))return;
+    if(p.inBackRoom&&!p.darkRoomTestLight&&(!p.lantern||!p.lightSelected))return;
+    const world=worldItemAtPoint(event.target.closest('.scene'),event.clientX,event.clientY)||event.target.closest('[data-layout-id]'),wood=event.target.closest('[data-action="pickup-wood"]');
+    if(!world&&!wood)return;
+    let id=wood?'firewood':world.dataset.itemId||world.dataset.layoutId;
+    if(id==='trinket-14')id='key-14';if(id.startsWith('fire-tool-'))id=id.slice(10);
+    if(!itemCatalog[id]||locked(id))return;
+    event.preventDefault();event.stopImmediatePropagation();inspect(index,id,false);
+  },true);
+  // Chest contents are already inside an overlay, so inspect its wood explicitly.
+  root.addEventListener('click',event=>{
+    if(document.body.classList.contains('layout-editing'))return;
+    const content=event.target.closest('[data-action="pickup-wood"],[data-action="inspect-chest-eye"]');if(!content)return;
+    event.preventDefault();event.stopImmediatePropagation();inspect(Number(content.closest('.player').dataset.player),content.dataset.action==='pickup-wood'?'firewood':'deer-eye',false);
+  },true);
+  root.addEventListener('keydown',event=>{
+    if(document.body.classList.contains('layout-editing'))return;
+    if((event.key==='Enter'||event.key===' ')&&event.target.matches('[data-layout-id][role="button"]')){event.preventDefault();event.stopImmediatePropagation();event.target.click();}
+  },true);
+})();
+</script>
+<script>
+  // Only the visible artwork and its controls keep an overlay open.
+  document.querySelector('#players').addEventListener('click',event=>{
+    if(document.body.classList.contains('layout-editing'))return;
+    const overlay=event.target.closest('.player-cover');if(!overlay||overlay.hidden)return;
+    if(event.target.closest('button,input,textarea,figcaption'))return;
+    const inside=[...overlay.querySelectorAll('img')].some(img=>pointInside(visibleImageRect(img),event.clientX,event.clientY));
+    if(inside)return;
+    event.preventDefault();event.stopImmediatePropagation();overlay.hidden=true;
+    if(overlay.dataset.role==='player-cover'){
+      const index=Number(overlay.closest('.player').dataset.player);state.bookPanelOpen[index]=false;if(state.bookOwner===index)state.bookOwner=null;drawAll();
+    }
+  },true);
+</script>
+<script>
+(() => {
+  const cursor=document.createElement('div');cursor.id='ladle-cursor';cursor.hidden=true;cursor.innerHTML='<img src="Grafik/1_slev.PNG" alt="">';document.body.append(cursor);
+  let pointer=null,activeZone=null;
+  function update(){
+    if(activeZone){activeZone.classList.remove('ladle-cursor-zone');activeZone=null;}
+    if(!pointer){cursor.hidden=true;return;}
+    const target=document.elementFromPoint(pointer.x,pointer.y),panel=target?.closest('.player'),zone=target?.closest('.scene,.inventory');
+    const p=panel?state.players[Number(panel.dataset.player)]:null;
+    const visible=p&&zone&&p.selectedItem==='ladle'&&p.inventory.includes('ladle')&&!target.closest('.player-cover')&&!document.body.classList.contains('layout-editing');
+    cursor.hidden=!visible;
+    if(visible){activeZone=zone;zone.classList.add('ladle-cursor-zone');cursor.style.left=`${pointer.x}px`;cursor.style.top=`${pointer.y}px`;cursor.classList.toggle('charged',state.ladleCharged);}
+  }
+  document.addEventListener('pointermove',event=>{pointer={x:event.clientX,y:event.clientY};update();});
+  document.documentElement.addEventListener('pointerleave',()=>{pointer=null;update();});
+  window.addEventListener('blur',()=>{pointer=null;update();});
+  new MutationObserver(update).observe(document.querySelector('#players'),{childList:true,subtree:true});
+})();
+</script>
+<script src="illness-brew.js"></script>
+<script src="illness-memory.js"></script>
+<link rel="stylesheet" href="apprentice-memory.css">
+<script src="apprentice-memory.js"></script>
+<link rel="stylesheet" href="forest-memory.css">
+<script src="forest-memory.js"></script>
+<script src="memories.js"></script>
+<script src="room-art.js"></script>
+<script src="echo-puzzle.js"></script>
+<script src="settings.js"></script>
+<script src="morse-puzzle.js"></script>
+<script src="light-puzzle.js"></script>
+<script src="crystal-ball.js"></script>
+<script src="crystal-ball-hints-data.js"></script>
+<script src="crystal-ball-hints.js"></script>
+<script src="inventory-drag.js"></script>
+<script src="cabinet-clue.js"></script>
+<script src="cabinet-grounding.js"></script>
+<script src="shared-puzzle.js"></script>
+<script src="endgame.js"></script>
+<script src="diary-words.js"></script>
+<style>.slot{touch-action:none}.deer-hatch-sheet{width:min(90%,65vh);height:auto;aspect-ratio:1451/1084;flex-shrink:0}.deer-hatch-sheet>img{width:100%;height:100%}.cabinet-herb:not([data-action]){pointer-events:none!important}.inventory-drag-ghost{position:fixed;z-index:10000;pointer-events:none;width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 0 8px #ffe4a8)}.inventory-dragging{cursor:grabbing!important}</style>
+</body>
+</html>
+
+
+
+
+

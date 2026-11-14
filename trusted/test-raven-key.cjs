@@ -1,0 +1,22 @@
+const {chromium}=require('C:/Users/freyj/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+ const page=await browser.newPage({viewport:{width:1400,height:1100}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(require('node:url').pathToFileURL(require('node:path').join(__dirname,'index.html')).href);
+ const p=i=>page.locator(`[data-player="${i}"]`);
+ for(let i=0;i<2;i++)await p(i).locator('[data-action="inspect-raven"]').click();
+ await p(0).locator('.scene').screenshot({path:require('node:path').join(__dirname,'../output/raven-key-preview.png')});
+ const rects=await p(0).locator('.raven-painting-sheet').evaluate(el=>({sheet:el.getBoundingClientRect().toJSON(),key:el.querySelector('button').getBoundingClientRect().toJSON()}));
+ assert.ok(Math.abs(rects.sheet.width/rects.sheet.height-1.5)<.01);
+ await p(0).locator('.raven-beak-key').click();
+ assert.equal(await p(0).locator('[data-inventory-item="raven-key"]').count(),1);
+ assert.equal(await page.locator('.raven-beak-key').count(),0);
+ await page.reload();await p(1).locator('[data-action="inspect-raven"]').click();assert.equal(await p(1).locator('.raven-beak-key').count(),0);
+ await p(0).locator('[data-inventory-item="raven-key"]').click();await p(0).locator('[data-inspect-action="drop"]').click();
+ await p(0).locator('[data-action="inspect-raven"]').click();assert.equal(await p(0).locator('.raven-beak-key').count(),1);
+ const keys=await page.evaluate(()=>[itemCatalog['key-14'].src,itemCatalog['north-box-key-0'].src,itemCatalog['raven-key'].src]);assert.equal(new Set(keys).size,3);
+ await page.evaluate(()=>{state.players[0].inventory=Array.from({length:10},(_,i)=>'ort-'+(i+1));drawPlayer(0);});
+ await p(0).locator('.raven-beak-key').click();assert.equal(await p(0).locator('[data-inventory-item="raven-key"]').count(),0);assert.match(await p(0).locator('[data-role="status"]').innerText(),/full/);
+ assert.deepEqual(errors,[]);await browser.close();console.log('PASS: painting overlay, aligned key, shared pickup, reload, put down, inventory capacity and three distinct key images.');
+})().catch(e=>{console.error(e);process.exit(1)});

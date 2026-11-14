@@ -1,0 +1,17 @@
+.word-envelope[data-diary]{position:relative;cursor:pointer;flex-direction:column}.word-envelope[data-diary]:focus-visible{outline:2px solid #e1c48f}.diary-word-count{font:12px Georgia,serif;color:#e1c48f}
+.diary-overlay{position:absolute;inset:0;z-index:250;background:#16110de8;display:grid;place-items:center;padding:1%;overflow:hidden;container-type:size}
+.diary-sheet{position:relative;height:100%;max-width:100%;aspect-ratio:3/4;min-width:0;color:#473223;font-family:Georgia,serif}
+.diary-paper{position:absolute;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.diary-ink{position:absolute;inset:13% 13% 12%;display:flex;flex-direction:column;gap:7px;min-height:0}
+.diary-ink header{display:flex;align-items:center;justify-content:space-between;gap:5px;font-size:clamp(8px,1.4cqw,12px);font-style:italic}
+.diary-ink header button{padding:1px 6px;background:transparent;border:1px solid #9e8055;color:#473223}
+.diary-ink h3{font:italic bold clamp(13px,2.2cqw,21px) Georgia,serif;margin:3px 0}
+.diary-ink article{flex:1;min-height:0;font:clamp(10px,1.65cqw,16px)/1.75 Georgia,serif}.diary-ink article p{margin:0 0 .75em}
+.diary-ink .diary-word,.diary-ink .diary-word:hover:not(:disabled){display:inline;padding:0 2px;border:0;border-bottom:1px dashed #745537;border-radius:0;background:#b6924a25;color:#51311e;font:inherit;cursor:pointer}
+.diary-word-taken{opacity:.48;font-style:italic}.diary-help{font:italic clamp(8px,1.2cqw,11px)/1.4 Georgia,serif;margin:0}
+.diary-saved-words{flex:1;min-height:0;display:flex;flex-wrap:wrap;align-content:flex-start;gap:9px;font:clamp(11px,1.8cqw,17px)/1.6 Georgia,serif}
+.diary-saved-words span{padding:3px 8px;border-bottom:1px solid #a17b4d;background:#e5c98a44;height:fit-content}
+
+.diary-ink article{font-size:clamp(8px,1.9cqh,14px);line-height:1.6}
+.diary-ink article p{margin-bottom:.55em}
+.diary-saved-words{overflow:auto}

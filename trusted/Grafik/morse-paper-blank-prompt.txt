@@ -1,0 +1,3 @@
+Built-in image_gen edit of morse-paper.png.
+
+Edit this parchment game asset: remove only the large title MORSEALFABETET and fill its area with matching natural blank parchment texture. Keep the parchment, aged edges, border, moon and botanical decorations unchanged. No text anywhere. Keep the large central blank area empty; the game overlays accurate Morse letters separately.

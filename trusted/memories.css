@@ -1,0 +1,184 @@
+.memory-layer{position:absolute;inset:0;z-index:8;pointer-events:none}.memory-layer button{pointer-events:auto}.memory-star{display:inline-block;color:var(--memory-color);font:clamp(22px,3vw,38px) Georgia,serif;text-shadow:0 0 7px var(--memory-color),0 0 18px var(--memory-color);pointer-events:none}.memory-whole{text-shadow:0 0 4px white,0 0 12px var(--memory-color),0 0 24px var(--memory-color)}.memory-desk,.memory-shelf{position:absolute;display:flex;justify-content:center;align-items:center;gap:3px}.memory-desk{flex-direction:column}.memory-desk-target{font-size:10px;padding:2px 6px;background:#302719c9}.memory-desk-slots{display:grid;grid-template-columns:repeat(9,1fr);gap:1px;width:95%}.memory-desk-slots button,.memory-shelf button{border:0;background:transparent;padding:0;min-width:0}.memory-desk-slots .memory-star,.memory-shelf .memory-star{font-size:clamp(15px,2.5vw,30px)}.memory-shelf{flex-wrap:nowrap}.memory-modal,.memory-scene,.memory-test{position:absolute;inset:0;pointer-events:auto;background:#171715f5;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:3%;text-align:center;color:#eee9dc}.memory-modal{background:#100f0dd9}.memory-modal article{max-width:80%;background:#30291f;border:1px solid #a38c61;border-radius:8px;padding:18px}.memory-scene h3,.memory-scene p,.memory-test p{margin:5px}.memory-scene p,.memory-eyebrow,.memory-test small{font-size:clamp(10px,1.5vw,15px)}.memory-test-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin-top:15px;width:95%}.memory-test-grid button{padding:4px;display:grid;place-items:center}.memory-test-grid button:disabled{opacity:.28}.memory-flash,.memory-reject{position:absolute;inset:25% 20%;display:grid;place-items:center;color:#ffeab3;font-size:70px;animation:memory-flash .8s ease-out forwards;pointer-events:none}.memory-reject{color:#b7dbff;animation:memory-reject .8s ease-out forwards}@keyframes memory-flash{0%{opacity:1;filter:brightness(3)}100%{opacity:0;transform:scale(2)}}@keyframes memory-reject{0%,40%{transform:translateX(-14px)}20%,60%{transform:translateX(14px)}100%{opacity:0;transform:translateX(0)}}
+.desk.memory-drawer-open{background-image:url("Grafik/0_Skrivbord.oppen.PNG")}.memory-drawer-controls{position:absolute;pointer-events:none;z-index:4}.memory-drawer-controls button{position:absolute;pointer-events:auto;border:0;padding:0;background:transparent}.memory-drawer-hit{left:18%;top:38%;width:32%;height:9%;cursor:pointer}.memory-drawer-open .memory-drawer-hit{top:41%;height:7%}.memory-drawer-hit:hover{background:#ffd97812}.memory-drawer-hit:focus-visible{outline:2px solid #ffe8ae;outline-offset:1px}.memory-drawer-controls .memory-drawer-star{left:28%;top:34%;width:14%;height:8%;display:grid;place-items:center;animation:drawer-star-arrive .3s ease-out}.memory-drawer-star .memory-star{font-size:clamp(16px,2vw,27px)}@keyframes drawer-star-arrive{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+/* Transparent star controls in every game state, including hover and inventory. */
+.memory-position,.memory-position:hover,.memory-position:active,.memory-test-grid button,.memory-test-grid button:hover,.slot.memory-inventory,.slot.memory-inventory:hover{background:transparent!important;border:0!important;box-shadow:none!important}
+.memory-position:focus-visible,.memory-inventory:focus-visible{outline:1px solid #ffe8ae}
+.memory-whole{color:#fff4d4;filter:brightness(1.8);text-shadow:0 0 4px white,0 0 9px white,0 0 18px var(--memory-color),0 0 32px var(--memory-color),0 0 48px var(--memory-color)}
+.memory-storage-shelf{position:absolute!important;left:35%;top:29%;bottom:auto;right:auto;width:30%;height:9%;z-index:2}
+.memory-desk{height:60px;display:block}.memory-desk-target{position:absolute;inset:0;width:100%;height:40px;opacity:0;padding:0;border:0}.memory-desk-slots{position:absolute;left:0;top:25px;width:100%;height:60px;display:block;pointer-events:none}
+.memory-desk-slots .memory-position,.memory-shelf .memory-position{position:absolute;width:10%;height:40%;padding:0;display:grid;place-items:center;min-width:0;z-index:2}
+.memory-shelf{height:45px;display:block}.memory-shelf .memory-position{height:90%}.memory-shelf .memory-whole{font-size:clamp(22px,3vw,38px)}
+.layout-editing .memory-position{animation:none}.memory-inventory.selected{outline:1px solid #f6d279}
+.memory-storage-shelf{top:14%;height:40%}
+.memory-storage-shelf{pointer-events:none}
+/* Desk placement is handled by clicks on the desk itself. Its invisible control
+   must not intercept the spellbook or the drawer underneath it. */
+.memory-layer .memory-desk-target{pointer-events:none}
+.memory-drawer-controls .memory-drawer-hit:hover:not(:disabled){background:transparent}
+.back-room .memory-layer{z-index:3}
+.memory-dark-star{position:absolute;display:grid;place-items:center;padding:0}
+.memory-dark-star .memory-star{animation:box-star-hover 2.6s ease-in-out infinite}
+.layout-editing .memory-dark-star .memory-star{animation:none}
+.deer-memory-star{position:absolute;left:67%;top:46%;width:7%;height:13%;padding:0;display:grid;place-items:center;z-index:2}
+.deer-memory-star .memory-star{animation:box-star-hover 2.6s ease-in-out infinite}
+.layout-editing .deer-memory-star .memory-star{animation:none}
+.fox-memory-star{position:absolute;left:72%;top:17%;width:13%;height:12%;padding:0;display:grid;place-items:center;z-index:3}
+.memory-box-star{position:absolute;width:6%;height:9%;padding:0;display:grid;place-items:center;animation:box-star-rise .8s ease-out both}
+.memory-box-star .memory-star{animation:box-star-hover 2.6s ease-in-out .8s infinite}
+@keyframes box-star-rise{from{opacity:0;translate:0 34px;scale:.3}to{opacity:1;translate:0 0;scale:1}}
+@keyframes box-star-hover{0%,100%{translate:0 0}50%{translate:0 -5px}}
+.layout-editing .memory-box-star,.layout-editing .memory-box-star .memory-star{animation:none}
+.memory-flying-key{position:fixed;width:55px;height:55px;object-fit:contain;z-index:1000;pointer-events:none;filter:drop-shadow(0 0 8px #ffe5a1)}
+.memory-jar-key,.memory-jar-key:hover:not(:disabled){position:absolute;z-index:64;pointer-events:auto;padding:0;border:0;background:transparent;filter:drop-shadow(0 0 6px #ffe5a180);animation:box-star-rise .5s ease-out both}
+.memory-jar-key img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;animation:box-star-hover 2.6s ease-in-out .5s infinite}
+
+.memory-modal .memory-found-coin{display:block;width:120px;height:120px;max-width:100%;max-height:24vh;object-fit:contain;margin:0 auto 12px;filter:drop-shadow(0 0 8px #e9a85c66)}
+/* Hand-drawn copper coins replace the old star glyphs. */
+.memory-star.memory-coin{display:inline-block;width:1.4em;height:1.4em;object-fit:contain;vertical-align:middle;pointer-events:none;text-shadow:none;color:inherit;filter:drop-shadow(0 1px 2px #160c08) drop-shadow(0 0 3px #e9a85c70)}
+.memory-coin.memory-whole{filter:drop-shadow(0 1px 2px #160c08) drop-shadow(0 0 5px #e9a85c90);text-shadow:none}
+.memory-position .memory-coin{width:100%;height:100%;max-width:64px;max-height:64px}
+.memory-test-grid .memory-coin{width:52px;height:52px;max-width:100%}
+.memory-scene>.memory-coin{width:100px;height:100px}
+.memory-flash .memory-coin{width:90px;height:90px}
+
+/* Small coins follow the painted desktop, with editor-controlled bounds. */
+.memory-desk-slots{inset:0;width:100%;height:100%}
+.memory-desk-slots .memory-position{width:11.111%;height:50%}
+.memory-shelf .memory-position{height:45%}
+.memory-position .memory-coin{max-width:none;max-height:none}
+.memory-modal .memory-found-coin{width:64px;height:64px}
+.memory-flash .memory-coin{width:40px;height:40px}
+.memory-scene.illness-scene{position:absolute;inset:0;display:block;padding:0;background:#241b16;overflow:auto;text-align:left}
+.illness-background{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:auto;height:auto;max-width:100%;max-height:100%;mask-image:radial-gradient(ellipse at center,#000 36%,rgba(0,0,0,.96) 49%,rgba(0,0,0,.72) 62%,rgba(0,0,0,.32) 76%,rgba(0,0,0,.08) 89%,transparent 100%);filter:blur(.45px)}
+.illness-scene button{padding:6px 10px;font-size:12px;color:#302218;background:#ead4ac;border:1px solid #765535;border-radius:5px;cursor:pointer}
+.illness-scene .illness-return{position:absolute;top:12px;left:12px;z-index:2}
+.scene.memory-room{background:#241b16;isolation:isolate}
+.scene.memory-room::before,.scene.memory-room::after{display:none}
+.scene.memory-room>:not(.memory-layer):not(.layout-box){display:none!important;pointer-events:none!important}
+.scene.memory-room>.memory-layer{position:relative;inset:auto;width:100%;height:100%;pointer-events:auto}
+.scene.memory-room .memory-scene{position:relative;inset:auto;width:100%;height:100%;box-sizing:border-box}
+.visiting-memory>.nav{visibility:hidden}
+.scene.memory-room .illness-scene{container-type:size}
+.illness-stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100cqw,133.333cqh);height:min(100cqh,75cqw)}
+.illness-prop{position:absolute;object-fit:contain;pointer-events:none;filter:drop-shadow(1px 3px 2px #21160d66)}
+.illness-shelf{left:43%;top:9%;width:33%;height:21%}
+.illness-shelf-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.illness-shelf .illness-herb{position:absolute;top:51%;width:6.5%;height:45%;object-fit:contain;object-position:center top;pointer-events:none}
+.illness-shelf button.illness-herb{padding:0;border:0;border-radius:0;background:transparent;pointer-events:auto;cursor:pointer}
+.illness-herb>img{display:block;width:100%;height:100%;object-fit:contain;object-position:center top;pointer-events:none}
+.illness-herb:hover>img,.illness-herb:focus-visible>img{filter:var(--memory-art-filter) brightness(1.15)}
+.layout-editing .illness-shelf button.illness-herb{pointer-events:none}
+.illness-herb-modal{z-index:30}
+.illness-herb-modal article{position:relative;min-width:180px;padding:28px 35px 16px}
+.illness-herb-modal article>img{display:block;width:180px;height:260px;max-width:45vw;max-height:55vh;object-fit:contain;margin:auto}
+.illness-herb-modal h3{margin:12px 0 0;color:#eee9dc}
+.illness-herb-close{position:absolute;right:8px;top:5px;font-size:24px;line-height:1;padding:3px 7px}
+.illness-scene .illness-book-hotspot{position:absolute;padding:0;border:0;border-radius:0;background:transparent;cursor:pointer}
+.illness-book-left{left:60%;top:39%;width:10%;height:6%}
+.illness-book-right{left:72%;top:40%;width:12%;height:5%}
+.illness-book-hotspot:hover{outline:none;background:transparent}
+.illness-book-hotspot:focus-visible{outline:1px solid #e6d3a588}
+.layout-editing .illness-book-hotspot{pointer-events:none}
+.illness-book-modal{z-index:30;box-sizing:border-box;padding:3%;overflow:hidden;min-width:0;min-height:0;container-type:size}
+.illness-book-modal article{position:relative;box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:min(600px,100%);height:min(500px,100%);max-width:100%;max-height:100%;min-width:0;min-height:0;padding:32px 12px 12px;background:#30291f;overflow:hidden}
+.illness-book-modal article>img{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain}
+.illness-kettle{left:29%;top:41%;width:17%;height:22%}
+.illness-plant-chart{left:64%;top:11%;width:18%;height:26%}
+.illness-open-book{left:66%;top:39%;width:15%;height:11%}
+.illness-board-paper{left:67%;top:16%;width:13%;height:17%}
+/* Invisible room hotspots, including the global button hover/active styles. */
+.illness-scene button.illness-book-hotspot,
+.illness-scene button.illness-book-hotspot:hover,
+.illness-scene button.illness-book-hotspot:active,
+.illness-scene button.illness-book-hotspot:focus{background:transparent!important;border:0!important;box-shadow:none!important;outline:none!important}
+/* The full-scene transparent modal still catches input outside the picture. */
+.memory-modal:is(.illness-book-modal,.illness-herb-modal){background:transparent;box-sizing:border-box;padding:3%;overflow:hidden}
+.memory-modal:is(.illness-book-modal,.illness-herb-modal)>article{background:transparent;border:0;border-radius:0;box-shadow:none;box-sizing:border-box;min-width:0;min-height:0;max-width:100%;max-height:100%;padding:28px 12px 12px;overflow:hidden}
+.illness-herb-modal>article{display:flex;align-items:center;justify-content:center;width:min(260px,100%);height:min(350px,100%)}
+.illness-herb-modal>article>img{width:100%;height:100%;max-width:100%;max-height:100%;min-width:0;min-height:0;object-fit:contain}
+
+.memory-room{--memory-art-filter:saturate(.55) contrast(.66) brightness(1.12) blur(.35px)}
+.illness-stage img:not(.illness-background),.illness-book-modal article>img,.illness-herb-modal article>img{filter:var(--memory-art-filter)}
+
+/* Herbs and cauldron keep their original colours for visibility. */
+.illness-stage .illness-herb>img,.illness-stage img.illness-kettle,.illness-stage img.illness-burning-wood,.illness-herb-modal article>img{filter:none}
+.illness-stage .illness-herb:hover>img,.illness-stage .illness-herb:focus-visible>img{filter:brightness(1.15)}
+.illness-portrait-hotspot{left:31%;top:11%;width:7%;height:12%}.illness-portrait-placeholder{color:#eee9dc;text-shadow:0 1px 4px #000}
+.illness-stage .illness-kettle{pointer-events:auto;cursor:pointer}.layout-editing .illness-stage .illness-kettle{pointer-events:none}.illness-kettle-modal article>img{filter:none}
+.visiting-memory .inventory .permanent-item{display:none}
+.illness-stage [data-memory="inspect-memory-wall-art"]{pointer-events:auto;cursor:pointer}.layout-editing .illness-stage [data-memory="inspect-memory-wall-art"]{pointer-events:none}
+.illness-burning-wood{left:29%;top:48%;width:17%;height:20%;z-index:1}.illness-stage .illness-kettle{z-index:2}
+.illness-wall-art-modal[data-wall-art="plants"] article>img{filter:none}
+.illness-herb-modal [data-memory="take-memory-herb"]{cursor:pointer}
+.memory-room .memory-modal article>img{filter:none}
+.illness-kettle-modal>article{position:relative}
+.illness-kettle-picture{position:relative;aspect-ratio:3 / 4;height:100%;max-width:100%;cursor:pointer;flex:none}
+.illness-kettle-picture>img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.illness-kettle-picture:focus-visible{outline:1px dashed #d7bf91}
+.illness-brew-effect{position:absolute;left:19%;top:45.9%;width:62%;height:6.3%;pointer-events:none;--brew-colour:#c7d5cf}
+.illness-liquid{position:absolute;inset:5% 2% 4%;border-radius:48% 53% 46% 54%;opacity:.38;background:radial-gradient(ellipse at 32% 45%,#b5c2b955,transparent 63%),#45574c;box-shadow:inset 0 0 4px 2px #18252488;filter:blur(.7px);transition:background 1.3s,opacity 1.3s;animation:memory-liquid 6s ease-in-out infinite alternate}
+.illness-brew-effect[data-effect="milk"] .illness-liquid{background:radial-gradient(ellipse at 40% 38%,#f4ead0,#c4c7b3 70%,#838c7a);opacity:.92}
+.illness-brew-effect[data-effect="gold"] .illness-liquid{background:radial-gradient(ellipse at 35% 35%,#e6c27f99,#af783c66 68%,#515c4544);opacity:.85}
+.illness-brew-effect i{display:none;position:absolute;left:calc(12% + var(--n)*13%);bottom:16%;animation-delay:calc(var(--n)*-.73s);pointer-events:none}
+.illness-brew-effect[data-effect="bubbles"] i{display:block;width:14%;height:75%;border:1px solid #c8c6a5aa;border-radius:44% 55% 49% 57%;background:radial-gradient(ellipse at 30% 28%,#e8ddbb88,transparent 55%);box-shadow:inset -1px -1px 2px #1d302c77;animation-name:memory-bubble;animation-duration:3.8s;animation-timing-function:ease-out;animation-iteration-count:infinite}
+.illness-brew-effect[data-effect="steam"] i,.illness-brew-effect[data-effect="smoke"] i{display:block;width:30%;height:220%;border-radius:44% 60% 38% 52%;filter:blur(5px);background:radial-gradient(ellipse,#e8e4d0aa,transparent 70%);animation-name:memory-steam;animation-duration:4.7s;animation-timing-function:ease-out;animation-iteration-count:infinite}
+.illness-brew-effect[data-effect="smoke"] i{width:42%;height:320%;background:radial-gradient(ellipse,#191a17e8,#30312699 40%,transparent 72%);filter:blur(4px);animation-duration:3.2s}
+.illness-brew-effect[data-effect="smoke"] .illness-liquid{background:#272c23;opacity:.9}
+@keyframes memory-liquid{from{transform:scaleX(.98);border-radius:48% 53% 46% 54%}to{transform:scaleX(1.01);border-radius:54% 46% 53% 47%}}
+@keyframes memory-bubble{0%,25%{transform:translateY(15%) scale(.12);opacity:0}45%{opacity:.8}78%{transform:translateY(-45%) scale(.85);opacity:.65}90%,100%{transform:translateY(-65%) scale(1.1,.35);opacity:0}}
+@keyframes memory-steam{0%{transform:translate(0,0) scale(.5);opacity:0}20%{opacity:.7}70%{opacity:.4}100%{transform:translate(calc((var(--n) - 2)*10%),-145%) scale(1.5,1.3);opacity:0}}
+.illness-empty-brew{position:absolute;bottom:12px;left:auto;right:0;transform:none;min-height:40px;padding:9px 22px;font:16px Georgia,serif;white-space:nowrap;z-index:4}
+.illness-piece-reward{position:absolute;right:8%;bottom:12%;width:60px!important;height:60px!important;padding:0!important;background:transparent!important;border:0!important;filter:drop-shadow(0 0 10px #e7cc8e88);animation:memory-piece-glimmer 3s ease-in-out infinite alternate}
+.illness-piece-reward svg,.memory-collected-piece svg{width:100%;height:100%;display:block}
+.memory-pieces{display:flex;align-items:center;gap:8px;padding:8px;color:#ddc797;font:12px Georgia,serif}
+.memory-pieces[hidden]{display:none}
+.memory-collected-piece{display:inline-block;width:32px;height:32px}
+@keyframes memory-piece-glimmer{to{filter:drop-shadow(0 0 16px #e7cc8edd)}}
+@media(prefers-reduced-motion:reduce){.illness-brew-effect *, .illness-piece-reward{animation:none!important}.illness-brew-effect i{opacity:.65}}
+.memory-magnifiable{cursor:zoom-in}.memory-magnifier{position:absolute;z-index:3;pointer-events:none;box-sizing:border-box;border:3px solid #b6a685;border-radius:50%;background-color:#eadcba;background-repeat:no-repeat;box-shadow:0 3px 12px #0009,inset 0 0 0 2px #32271b;filter:none}.memory-magnifier[hidden]{display:none}.illness-book-modal article>.illness-herb-close{z-index:4}
+/* A moving wash at the faded perimeter only. Artwork and hit targets stay still. */
+.scene.memory-room>.memory-layer::after{
+  content:"";position:absolute;inset:0;z-index:6;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 4% 24%,#cbb89b70,transparent 48%),
+    radial-gradient(ellipse at 97% 73%,#b4b4ab66,transparent 48%),
+    radial-gradient(ellipse at 52% 0%,#d3c3ab55,transparent 47%),
+    radial-gradient(ellipse at 33% 100%,#a6b6b266,transparent 48%);
+  background-size:115% 125%,125% 115%,120% 130%,125% 120%;
+  mask-image:radial-gradient(ellipse at center,transparent 0 57%,#0009 78%,#000 100%);
+  -webkit-mask-image:radial-gradient(ellipse at center,transparent 0 57%,#0009 78%,#000 100%);
+  filter:blur(9px);opacity:.55;
+  animation:memory-edge-wash 11s ease-in-out infinite alternate;
+}
+@keyframes memory-edge-wash{
+  0%{background-position:0% 10%,100% 90%,25% 0%,75% 100%;opacity:.38;border-radius:3% 5% 4% 2%}
+  50%{background-position:25% 45%,70% 55%,60% 25%,30% 70%;opacity:.62;border-radius:5% 2% 3% 5%}
+  100%{background-position:60% 80%,25% 15%,95% 50%,0% 35%;opacity:.45;border-radius:2% 4% 5% 3%}
+}
+.scene.memory-room>.memory-layer:has(.memory-modal,.ap-exam-overlay,.ap-book-overlay)::after{display:none}
+.layout-editing .scene.memory-room>.memory-layer::after{display:none}
+@media(prefers-reduced-motion:reduce){.scene.memory-room>.memory-layer::after{animation:none;opacity:.38}}
+.illness-brew-effect[data-effect="steam"] i{height:310%;width:26%;background:radial-gradient(ellipse,#f0ebd7dd, #e0e3d188 42%,transparent 74%);filter:blur(4px)}.illness-brew-effect[data-effect="smoke"] i{height:410%;width:48%;background:radial-gradient(ellipse,#080b08f5,#22271ccc 46%,transparent 76%);filter:blur(3px)}.illness-liquid:after{content:"";position:absolute;inset:9% 4%;border-radius:inherit;opacity:.22;background:repeating-radial-gradient(ellipse at 31% 59%,transparent 0 3px,#777c6455 4px,transparent 6px);mix-blend-mode:multiply}
+.inventory .slot,.inventory .slot:focus,.inventory .slot:focus-visible{outline:none!important}.inventory .slot.selected{outline:1px solid #f1d38a!important;outline-offset:1px}.visiting-memory .inventory-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.inventory-head [data-memory="return-memory-herb"]{padding:4px 8px;font-size:12px}.inventory-head [data-memory="return-memory-herb"][hidden]{display:none}
+
+/* The shared sack is available from the opening scene, below notes and crystal ball. */
+.memory-pieces{flex-wrap:wrap;justify-content:center;margin-top:12px}
+.puzzle-sack-art{display:block;flex:0 0 100%;width:110px;height:120px;object-fit:contain;filter:drop-shadow(1px 4px 3px #20150b88)}
+
+/* Permanent envelope for the shared word collection. */
+.word-envelope{display:flex;justify-content:center;align-items:center;margin-top:12px;padding:6px}
+.word-envelope img{display:block;width:125px;max-width:100%;height:95px;object-fit:contain;filter:drop-shadow(1px 4px 3px #20150b88)}
+
+/* Permanent collections sit beside the book and never take up regular slots. */
+.inventory .permanent-item{flex-wrap:wrap;gap:7px}
+.inventory .permanent-item .collection-slot,.inventory .permanent-item .collection-slot:hover:not(:disabled){display:grid;place-items:center;position:relative;flex:0 0 38px;width:38px;height:38px;min-width:38px;margin:0;padding:3px;border:1px solid #665c49;border-radius:4px;background:#211f1a;box-shadow:none}
+.inventory .permanent-item .collection-slot img{display:block;width:100%;height:100%;max-width:100%;object-fit:contain;filter:drop-shadow(0 1px 1px #0008);flex:none}
+.inventory .permanent-item .collection-slot>:not(img){display:none}
+.inventory .permanent-item [data-action="open-book"]{width:38px;height:38px}
+.inventory .permanent-item [data-role="permanent-label"]{display:none}
+.visiting-memory .inventory .permanent-item{display:flex}
+.visiting-memory .inventory .permanent-item [data-action="open-book"]{display:none}
+
+/* Collection dialogs remain usable while visiting a memory. */
+.player .scene.memory-room>.diary-overlay,.player .scene.memory-room>.endgame-overlay{display:grid!important;pointer-events:auto!important}
+.player .scene.memory-room>.shared-puzzle-overlay{display:flex!important;pointer-events:auto!important}

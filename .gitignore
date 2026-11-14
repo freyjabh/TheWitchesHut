@@ -1,0 +1,22 @@
+# Generated builds and previews
+/SPELET-USB/
+/output/
+*-preview.png
+node_modules/
+*.log
+
+# Local play sessions and private player links
+lan-access.json
+lan-playtest-save.json
+lan-playtest-save.json.tmp
+
+# Credentials and machine-local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

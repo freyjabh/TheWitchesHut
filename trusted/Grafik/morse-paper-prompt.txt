@@ -1,0 +1,5 @@
+Generated with the built-in image_gen tool.
+
+Use case: illustration-story. Game asset for a hand drawn witch hut escape room: a single aged parchment sheet, front on, warm ivory paper, softly worn ragged edges, subtle brown ink border and tiny corner flourishes, illustrated ink and watercolor. Portrait composition. Title at top exactly "MORSEALFABETET". Leave the entire large central area EMPTY for a precise alphabet table to be overlaid by the game UI. No other letters, symbols, runes, dots, dashes or text. Flat even lighting, no objects, no hands, no perspective. Parchment fills image.
+
+The game overlays the exact Morse alphabet as HTML text for legibility and accuracy.

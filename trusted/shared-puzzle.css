@@ -1,0 +1,34 @@
+.memory-pieces[data-puzzle]{cursor:pointer}.memory-pieces[data-puzzle]:focus-visible{outline:2px solid #dec391}
+.shared-puzzle-overlay{position:absolute;inset:0;z-index:195;box-sizing:border-box;padding:2%;background:#241e18fa;color:#ead8b4;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+.shared-puzzle-overlay header,.shared-puzzle-overlay footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;font:12px Georgia,serif}
+.shared-puzzle-overlay button{font:12px Georgia,serif}.shared-puzzle-overlay p{margin:0;text-align:center;font:12px Georgia,serif;flex:none}
+.shared-puzzle-board{position:relative;align-self:center;flex:none;width:min(68%,480px);aspect-ratio:10/7;background:#100e0b;box-shadow:inset 0 0 0 1px #b69b6766;isolation:isolate}
+.shared-puzzle-fixed{position:absolute;display:block;pointer-events:none}.shared-puzzle-fixed svg{display:block;width:100%;height:100%}
+.shared-puzzle-tray{flex:1;min-height:0;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:2px 5px;overflow:auto}
+.shared-puzzle-piece,.shared-puzzle-piece:hover:not(:disabled){flex:0 0 13%;width:13%;height:auto;aspect-ratio:254/241;padding:0;border:0;background:transparent;cursor:grab;touch-action:none;filter:drop-shadow(1px 3px 2px #0009)}
+.shared-puzzle-piece svg{display:block;width:100%;height:100%;pointer-events:none}.shared-puzzle-piece.is-selected{filter:drop-shadow(0 0 4px #ffe5a8)}
+.shared-puzzle-drag{position:fixed;z-index:1000;pointer-events:none;transform:translate(-50%,-50%);opacity:.95}
+@media(max-width:600px){.shared-puzzle-board{width:60%}.shared-puzzle-piece{flex-basis:12%;width:12%}.shared-puzzle-overlay p,.shared-puzzle-overlay button,.shared-puzzle-overlay header{font-size:10px}}
+
+.shared-puzzle-board{width:auto;height:50%;max-width:85%;aspect-ratio:10/7}
+.shared-puzzle-tray{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));align-content:stretch;overflow:hidden;gap:6px}
+.shared-puzzle-tray .shared-puzzle-piece{width:100%;height:100%;min-height:0;aspect-ratio:auto}
+.shared-puzzle-piece svg{overflow:visible}
+
+.shared-puzzle-tray .shared-puzzle-piece:hover:not(:disabled){width:100%;height:100%;aspect-ratio:auto}
+
+/* A completed picture collapses into light and leaves a folded letter. */
+.shared-puzzle-overlay.is-transforming .shared-puzzle-board{animation:puzzle-into-light 2.3s cubic-bezier(.6,.03,.8,.55) both;transform-origin:center;box-shadow:none;background:transparent}
+.shared-puzzle-overlay.is-transforming .shared-puzzle-board::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse,#fff9dc,#f5d38377 30%,transparent 68%);animation:puzzle-light-flash 2.3s ease-out both;pointer-events:none}
+.shared-puzzle-overlay.is-transforming .shared-puzzle-fixed path{stroke:transparent}
+.shared-puzzle-overlay.is-transforming footer,.shared-puzzle-overlay.is-transforming .shared-puzzle-tray{visibility:hidden}
+.shared-puzzle-letter{flex:1;min-height:0;display:grid;place-items:center;animation:puzzle-letter-arrive .7s ease-out both}
+.shared-puzzle-letter svg{width:min(75%,420px);max-height:85%;filter:drop-shadow(0 10px 15px #0008)}
+@keyframes puzzle-into-light{0%,18%{transform:rotate(0) scale(1);opacity:1;filter:brightness(1)}65%{opacity:1;filter:brightness(1.7)}100%{transform:rotate(650deg) scale(.015);opacity:0;filter:brightness(3)}}
+@keyframes puzzle-light-flash{0%,40%{opacity:0}70%{opacity:.8}100%{opacity:1}}
+@keyframes puzzle-letter-arrive{from{opacity:0;transform:translateY(14px) scale(.8) rotate(-7deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(-2deg)}}
+@media(prefers-reduced-motion:reduce){.shared-puzzle-overlay.is-transforming .shared-puzzle-board,.shared-puzzle-overlay.is-transforming .shared-puzzle-board::after,.shared-puzzle-letter{animation:none}}
+
+.shared-puzzle-overlay.is-transforming::after{content:"";position:absolute;left:50%;top:33%;width:160px;height:160px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fffbed,#f1d38c77 25%,transparent 70%);pointer-events:none;animation:puzzle-reveal-burst 2.4s ease-out both}
+@keyframes puzzle-reveal-burst{0%,70%{opacity:0;scale:.3}85%{opacity:.9;scale:1.25}100%{opacity:0;scale:1.8}}
+@media(prefers-reduced-motion:reduce){.shared-puzzle-overlay.is-transforming::after{animation:none;display:none}}

@@ -1,0 +1,26 @@
+# Game artwork checklist
+
+- [ ] Desk
+- [ ] Penholder
+- [ ] Skull
+- [ ] Spellbook
+- [ ] Small back-room door
+- [ ] Door lock
+- [ ] Painting of a mother and three children
+- [ ] Chest with keyhole
+- [ ] Kettle
+- [ ] Firepit
+- [ ] Shelf
+- [ ] Bottles
+- [ ] Jars
+- [ ] Drying herbs
+- [ ] Small table
+- [ ] Notepad
+- [ ] Locked outside door
+- [ ] Window
+- [ ] Forest view
+- [ ] Empty bottles
+- [ ] Ladle
+- [ ] Code cabinet
+- [ ] Tarot memory-card halves
+- [ ] Dark-room objects

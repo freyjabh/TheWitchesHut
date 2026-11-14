@@ -1,0 +1,99 @@
+/* Exterior only: deliberately no selectors targeting .scene or its descendants.
+   Room artwork, geometry, filters and interaction styles belong to the game. */
+html body {
+  background: #000;
+}
+main > .title-row { min-height: 88px; gap: 20px; }
+.title-row h1 {
+  display: inline-block; margin: 0 0 7px; padding: 12px 28px;
+  background: url('Grafik/ui-parchment.svg') center / 100% 100% no-repeat;
+  color: #302619; font: bold clamp(22px,3vw,34px)/1.2 Georgia,serif;
+  text-shadow: 1px 1px #f4dfaf70;
+}
+.title-row .intro { color: #c3b596; text-shadow: 0 1px 3px #000; }
+.players { gap: 24px; }
+.player {
+  position: relative; isolation: isolate;
+  background: #19231b url('Grafik/2_skogsbakgrund_dampad.png') center / 100% 100% no-repeat;
+  border-color: #98815b;
+  border-radius: 9px 5px 12px 6px / 6px 11px 7px 13px;
+  box-shadow: 0 0 0 2px #12170f,0 0 0 3px #6e6045,0 12px 35px #0007;
+}
+.player::before {
+  content: ''; position: absolute; inset: 3px; z-index: -1;
+  border: 1px solid #ac906544;
+  border-radius: 4px 11px 5px 13px / 10px 5px 12px 4px;
+  pointer-events: none;
+}
+.player > h2 {
+  color: #ead4aa; font-family: Georgia,serif; letter-spacing: .06em;
+  text-shadow: 1px 2px #080e0a;
+}
+/* List each exterior control explicitly; global button styling would leak into puzzles. */
+:is(.title-actions,.layout-toolbar,.nav,.test-tools) > button,
+.notes-panel > .notes-toggle,
+.player > h2 > .player-settings-button,
+.settings-dialog button {
+  color: #302619; border: 1px solid #281f15;
+  border-radius: 7px 3px 9px 4px / 4px 8px 4px 7px;
+  background: #c8aa77 url('Grafik/ui-parchment.svg') center / 100% 100%;
+  box-shadow: 0 1px 0 #99805a,inset 0 0 0 2px #55402966;
+  font-family: Georgia,serif;
+}
+:is(.title-actions,.layout-toolbar,.nav,.test-tools) > button:hover:not(:disabled),
+.notes-panel > .notes-toggle:hover:not(:disabled),
+.player > h2 > .player-settings-button:hover:not(:disabled),
+.settings-dialog button:hover:not(:disabled) {
+  background: #e1c38e url('Grafik/ui-parchment.svg') center / 100% 100%;
+  filter: brightness(1.12);
+}
+:is(.title-actions,.layout-toolbar,.nav,.test-tools) > button:focus-visible,
+.notes-panel button:focus-visible,.inventory button:focus-visible {
+  outline: 2px solid #f4d99e; outline-offset: 3px;
+}
+.player-game > .nav { padding-block: 5px; }
+.nav > button { min-width: 100px; }
+.nav > .wall-count {
+  padding: 6px 18px; color: #e1cda5; font-family: Georgia,serif;
+  border-bottom: 1px solid #99845c; border-radius: 0 0 45% 20%;
+}
+.player-game > .status { color: #c7b99a; }
+.player-game > .inventory {
+  border-top: 1px solid #97825b; padding-top: 10px;
+  background: linear-gradient(#182219b8,#101a14df);
+}
+.inventory-head > h3 {
+  padding: 5px 15px; color: #302619; text-transform: none; letter-spacing: .03em;
+  font: bold 14px Georgia,serif;
+  background: url('Grafik/ui-parchment.svg') center / 100% 100% no-repeat;
+}
+.inventory .small-note,.inventory .inventory-empty,.inventory .permanent-label { color: #b5a585; }
+.inventory :is(.slot,.permanent-slot) {
+  border-color: #a28a60; background: #111c1670;
+  border-radius: 5px 3px 7px 4px / 3px 7px 4px 6px;
+  box-shadow: inset 0 0 0 2px #080e0a,0 1px 0 #544b35;
+}
+.inventory .slot:nth-child(even) { border-radius: 3px 7px 4px 6px / 6px 3px 7px 4px; }
+.inventory .slot-number { color: #b4a07b; font-family: Georgia,serif; }
+.notes-panel { padding-top: 1px; }
+.notes-panel > .notes-toggle { min-height: 32px; text-align: center; font-family: system-ui,sans-serif; }
+.notes-panel > .crystal-home {
+  padding: 14px 4px 22px; margin-top: 18px;
+  border-block: 1px solid #8c785144; border-radius: 35% 12% 24% 8%;
+  background: radial-gradient(ellipse,#53604433,transparent 70%);
+}
+.notes-panel .crystal-companion { color: #e8d4ae; text-shadow: 1px 2px #000; }
+.notes-panel .crystal-companion:hover:not(:disabled) { background: #73805b18; }
+main > .layout-toolbar {
+  background: #19231be8; border-color: #766447;
+  border-radius: 8px 4px 11px 5px; box-shadow: inset 0 0 0 2px #10170f;
+}
+.settings-dialog {
+  background: #1d291f url('Grafik/ui-forest-backdrop.png') center / cover;
+  border: 2px solid #a48a5c; border-radius: 12px 5px 15px 7px;
+}
+@media(max-width:600px) {
+  main > .title-row { min-height: 0; }
+  .title-row h1 { padding: 12px 18px; }
+  .nav > button { min-width: 75px; }
+}

@@ -1,0 +1,57 @@
+<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Witches Hut – speltest</title><style id="remote-styles"></style><style>
+body{padding:12px!important;margin:0;background:#151411}#connection{max-width:1100px;margin:0 auto 8px;font:14px system-ui;color:#d8cba9}#viewport{position:relative;margin:0 auto;width:100%;max-width:1100px}#stage{width:1100px;transform-origin:top left}#stage .player{width:1100px!important}#stage .test-tools{display:none!important}#stage dialog{position:fixed;top:30px;left:200px;margin:0;z-index:10000}#stage dialog[open]::before{content:'';position:fixed;inset:-10000px;background:#0008;z-index:-1}#stage .player-settings-button{touch-action:none}
+#play-controls{max-width:1100px;margin:0 auto 8px;display:flex;align-items:center;justify-content:space-between;gap:12px}#play-controls #connection{margin:0;font:14px system-ui}#fullscreen-toggle{flex-shrink:0;font:14px system-ui;color:#eee2c5;background:#30291d;border:1px solid #927b52;border-radius:5px;padding:7px 12px;cursor:pointer}#fullscreen-toggle:focus-visible{outline:2px solid #e3ca8c;outline-offset:3px}#fullscreen-help{max-width:1100px;margin:0 auto 8px;color:#e3ca8c;font:13px system-ui}#fullscreen-help:empty{display:none}
+body{height:100dvh;overflow:hidden!important}#viewport{max-width:none}#stage{position:absolute;left:0;top:0}#play-controls{width:100%;min-width:0}#connection{min-width:0;overflow-wrap:anywhere}#fullscreen-toggle{font-size:clamp(11px,2vw,14px)}
+</style></head><body><div id="play-controls"><div id="connection">Ansluter till spelet…</div><button type="button" id="fullscreen-toggle" aria-pressed="false">⛶ Helskärm</button></div><p id="fullscreen-help" role="status"></p><div id="viewport"><div id="stage"></div></div><script>
+const token=new URLSearchParams(location.search).get('token'),stage=document.querySelector('#stage'),box=document.querySelector('#viewport'),status=document.querySelector('#connection'),remoteStyles=document.querySelector('#remote-styles');
+const fullscreenButton=document.querySelector('#fullscreen-toggle'),fullscreenHelp=document.querySelector('#fullscreen-help');
+function updateFullscreen(){const active=Boolean(document.fullscreenElement);fullscreenButton.textContent=active?'⛶ Avsluta helskärm':'⛶ Helskärm';fullscreenButton.setAttribute('aria-pressed',String(active));fit();}
+fullscreenButton.addEventListener('click',async()=>{fullscreenHelp.textContent='';try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else throw Error();}catch{fullscreenHelp.textContent='Helskärm kunde inte öppnas här. Använd helskärmsknappen på tangentbordet eller öppna länken i Chrome eller Edge.';}updateFullscreen();});
+document.addEventListener('fullscreenchange',updateFullscreen);
+let revision=-1,styles='',pending=0,queue=Promise.resolve(),moving=null,moveTimer=null,down=false,lastNode=null;
+// Reconcile existing nodes so focus, hover and animations survive live updates.
+function morph(parent,source){
+ const wanted=[...source.childNodes];
+ for(let i=0;i<wanted.length;i++){
+  const next=wanted[i];let current=parent.childNodes[i];
+  if(next.nodeType===1&&next.dataset.lanNode){const found=[...parent.children].find(n=>n.dataset.lanNode===next.dataset.lanNode);if(found&&found!==current){parent.insertBefore(found,current||null);current=found;}}
+  if(!current){parent.append(next.cloneNode(true));continue;}
+  if(current.nodeType!==next.nodeType||(next.nodeType===1&&(current.tagName!==next.tagName||current.dataset.lanNode!==next.dataset.lanNode))){current.replaceWith(next.cloneNode(true));continue;}
+  if(next.nodeType===3){if(current.nodeValue!==next.nodeValue)current.nodeValue=next.nodeValue;continue;}
+  if(next.nodeType!==1)continue;
+  for(const a of [...current.attributes])if(!next.hasAttribute(a.name))current.removeAttribute(a.name);
+  for(const a of next.attributes)if(current.getAttribute(a.name)!==a.value)current.setAttribute(a.name,a.value);
+  if(current.matches('input,textarea,select')&&current.value!==next.value)current.value=next.value;
+  morph(current,next);
+ }
+ while(parent.childNodes.length>wanted.length)parent.lastChild.remove();
+}
+function fit(){
+ const view=window.visualViewport;
+ const width=Math.min(document.documentElement.clientWidth,view?.width||innerWidth);
+ const height=Math.min(innerHeight,view?.height||innerHeight);
+ const padding=getComputedStyle(document.body);
+ const availableWidth=Math.max(1,width-parseFloat(padding.paddingLeft)-parseFloat(padding.paddingRight));
+ const availableHeight=Math.max(1,height-box.getBoundingClientRect().top-parseFloat(padding.paddingBottom)-2);
+ const panelHeight=Math.max(1,stage.offsetHeight);
+ const scale=Math.min(availableWidth/1100,availableHeight/panelHeight);
+ stage.style.transform=`scale(${scale})`;
+ box.style.width=`${1100*scale}px`;
+ box.style.height=`${panelHeight*scale}px`;
+}
+window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);new ResizeObserver(fit).observe(stage);
+function send(a){pending++;queue=queue.then(async()=>{const res=await fetch('/lan/input?token='+encodeURIComponent(token),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(a)});if(!res.ok)throw Error('Anslutningen bröts');}).catch(()=>{status.textContent='Anslutningen bröts. Försöker igen…';}).finally(()=>pending--);return queue;}
+function target(e){const el=e.target.closest('[data-lan-node]');if(!el)return null;const r=el.getBoundingClientRect();const root=el.closest('.player')||el.closest('dialog'),path=[];let node=el;while(node&&node!==root){path.unshift([...node.parentElement.children].indexOf(node));node=node.parentElement;}const signature=JSON.stringify([el.tagName,[...el.attributes].filter(a=>a.name.startsWith('data-')&&a.name!=='data-lan-node').map(a=>[a.name,a.value]).sort()]);return{path,scope:root?.tagName==='DIALOG'?'dialog':'player',signature,id:el.dataset.lanNode,x:r.width?(e.clientX-r.left)/r.width:0,y:r.height?(e.clientY-r.top)/r.height:0,buttons:e.buttons};}
+function flush(){if(moving){send(moving);moving=null;}clearTimeout(moveTimer);moveTimer=null;}
+for(const type of ['pointerdown','pointerup','pointercancel','click'])stage.addEventListener(type,e=>{const a=target(e);if(!a)return;flush();if(type==='pointerdown'){down=true;lastNode=a;}if(type==='pointerup'||type==='pointercancel')down=false;if(type==='click'&&e.target.closest('input,textarea,select'))return;send({...a,type});if(!e.target.closest('input,textarea,select'))e.preventDefault();});
+stage.addEventListener('pointermove',e=>{const a=target(e);if(!a)return;lastNode=a;moving={...a,type:'pointermove'};if(!moveTimer)moveTimer=setTimeout(flush,50);});
+window.addEventListener('pointerup',e=>{if(down&&!stage.contains(e.target)&&lastNode){down=false;flush();send({...lastNode,type:'pointerup',buttons:0});}});
+stage.addEventListener('pointerleave',e=>{flush();if(lastNode)send({...lastNode,type:'pointerleave',buttons:0});});
+stage.addEventListener('submit',e=>{e.preventDefault();const a=target(e);if(a)send({...a,type:'submit'});});
+stage.addEventListener('input',e=>{const a=target(e);if(a)send({...a,type:'input',value:e.target.value});});
+for(const type of ['keydown','keyup'])stage.addEventListener(type,e=>{const a=target(e);if(a)send({...a,type,key:e.key,code:e.code});});
+async function poll(){try{const res=await fetch('/lan/frame?token='+encodeURIComponent(token));if(!res.ok)throw Error();const f=await res.json();if(!pending&&!down&&f.revision>revision){const active=document.activeElement,focusId=stage.contains(active)?active.dataset.lanNode:null,start=active?.selectionStart,end=active?.selectionEnd;
+if(styles!==f.styles){styles=f.styles;remoteStyles.innerHTML='';const parsed=new DOMParser().parseFromString('<head>'+styles+'</head>','text/html');remoteStyles.textContent=[...parsed.querySelectorAll('style')].map(s=>s.textContent).join('\n');document.querySelectorAll('link[data-remote]').forEach(el=>el.remove());for(const link of parsed.querySelectorAll('link')){link.dataset.remote='';document.head.append(link);}}
+document.documentElement.className=f.htmlClass;document.documentElement.setAttribute('style',f.htmlStyle);document.body.className=f.bodyClass;const template=document.createElement('template');template.innerHTML=f.html+f.dialog;morph(stage,template.content);revision=f.revision;if(f.focus||focusId){const el=stage.querySelector(`[data-lan-node="${f.focus||focusId}"]`);el?.focus({preventScroll:true});if((!f.focus||f.focus===focusId)&&typeof start==='number')try{el.setSelectionRange(start,end);}catch{}}fit();}status.textContent='Spelare '+(new URLSearchParams(location.search).get('player')||'')+' · Ansluten · Gemensamt spel';}catch{status.textContent=token?'Ingen kontakt med värddatorn. Försöker igen…':'Öppna din spelarlänk från värddatorns startfönster.';}setTimeout(poll,120);}
+poll();
+</script></body></html>

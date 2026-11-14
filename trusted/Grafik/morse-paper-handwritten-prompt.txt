@@ -1,0 +1,43 @@
+Built-in image_gen edit of morse-paper-blank.png.
+
+Edit this parchment image by writing the complete international Morse alphabet directly on its central blank area in legible HANDWRITTEN dark brown ink. Keep parchment texture, botanical border, crescent and edges unchanged. No title, no explanatory sentences. Three tidy columns, 12 rows each, large clear letters and distinct round ink dots and long horizontal ink dashes with generous spaces. Slight natural irregularity of pen strokes, old handwritten reference sheet, NOT a computer font. Every row has a letter or digit then its exact Morse code, left to right. Preserve every dot/dash exactly, do not merge them.
+Column 1:
+A .-
+B -...
+C -.-.
+D -..
+E .
+F ..-.
+G --.
+H ....
+I ..
+J .---
+K -.-
+L .-..
+Column 2:
+M --
+N -.
+O ---
+P .--.
+Q --.-
+R .-.
+S ...
+T -
+U ..-
+V ...-
+W .--
+X -..-
+Column 3:
+Y -.--
+Z --..
+0 -----
+1 .----
+2 ..---
+3 ...--
+4 ....-
+5 .....
+6 -....
+7 --...
+8 ---..
+9 ----.
+Use most of central area within border. Each code must have separated marks. No extra characters.

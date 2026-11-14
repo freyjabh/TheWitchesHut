@@ -1,0 +1,27 @@
+Skapade med inbyggda imagegen, 6 november 2026.
+Referens och redigeringsmål: anslagstavla-lapp-akvarell.png.
+18 separata bilder med transparent bakgrund. Filnamn: 3_lapp.<namn med små bokstäver>.png.
+Stavning följer växtböckerna: Noctiluna (inte Noctulina).
+
+Gemensam prompt:
+Edit the attached blank parchment slip. Preserve its wide landscape proportions, complete ragged paper silhouette, watercolor cream/ochre stains, white-ish center, thin messy black scribble edge contours and transparent exterior. Add ONLY the specified single plant name in LARGE readable black fountain pen HANDWRITING across the center. Authentic slightly hurried untidy handwriting: irregular slant and baseline, varied letter widths, nib pressure with thick downstrokes and fine hairlines, a few tiny black ink blots and subtle smeared ink around the writing, but every letter clearly legible. NOT a typeset font, not tidy calligraphy, not printed block letters. Rough handmade sketchbook look to match the paper. Leave roomy margins, retain existing paper art, no plant illustrations, no other words, no headings, no frame or background. True transparency around the paper. Exact case-sensitive text: 
+
+För varje namn kompletterades prompten med namnet inom citattecken och instruktionen att stava det exakt, bokstav för bokstav:
+Noctiluna
+Verridra
+Sanguinor
+Luminthra
+Caelthym
+Umbrafol
+Ignispetra
+Mortelana
+Aetheris
+Moonblossom
+Greenvein
+Bloodmoss
+Starroot
+Skythyme
+Shadowleaf
+Firepetal
+Deathbloom
+Windfern

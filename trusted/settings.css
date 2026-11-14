@@ -1,0 +1,27 @@
+.title-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;flex-shrink:0}
+.player > h2{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:28px}
+.player-settings-button{display:grid;place-items:center;width:30px;height:28px;padding:3px;background:transparent;border-color:transparent;color:#d8cba9;flex-shrink:0}
+.scene{filter:contrast(var(--game-contrast,1)) saturate(var(--game-saturation,1)) brightness(var(--game-brightness,1))}
+.phosphor-clue{display:none;position:absolute;left:37%;top:22%;width:26%;height:48%;pointer-events:none;z-index:49;color:#c5ffab;filter:drop-shadow(0 0 3px #a3ff85) drop-shadow(0 0 9px #83ed6870)}
+.lights-out .scene{filter:none;background:#000!important;border-color:#000}
+.lights-out .scene::before,.lights-out .scene::after{display:none}
+.lights-out .scene > *{visibility:hidden}
+.lights-out .scene > .phosphor-clue{display:block;visibility:visible}
+.settings-dialog{width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;padding:26px;border:1px solid #9b865b;border-radius:10px;background:linear-gradient(145deg,#302c23,#1c1b17);color:#eee9dc;box-shadow:0 24px 80px #000b}
+.settings-dialog::backdrop{background:#080807bd}
+.settings-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px}
+.settings-heading h2{margin:0;font:1.5rem Georgia,serif;color:#e3ce9d}
+.settings-close{font-size:1.3rem;line-height:1;padding:5px 9px}
+.settings-description,.settings-hint{color:#b2a995;font-size:.8rem;line-height:1.5}
+.settings-description{margin:0 0 24px}
+.settings-control{display:block;margin:0 0 22px}
+.settings-label{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;font-size:.9rem}
+.settings-label output{color:#e3ce9d;font-variant-numeric:tabular-nums}
+.settings-control input{display:block;width:100%;margin:0;accent-color:#d2b478;cursor:pointer}
+.settings-control input:focus-visible{outline:2px solid #e3ca8c;outline-offset:5px}
+.settings-hint{display:block;margin-top:8px;font-size:.72rem}
+.settings-footer{border-top:1px solid #62553d;padding-top:18px;display:flex;justify-content:space-between;gap:12px}
+@media(max-width:600px){.title-row{align-items:flex-start;flex-wrap:wrap}.title-actions{justify-content:flex-start}.settings-dialog{padding:20px}}
+
+.settings-game-reset{margin-top:20px;padding-top:16px;border-top:1px solid #62553d}.settings-game-reset p{margin:8px 0 0;font-size:.75rem;color:#c8baa2}.settings-game-reset button{border-color:#b88b69}
+
